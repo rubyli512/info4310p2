@@ -17,125 +17,48 @@
     }
 </style>
 
-<svg id="map" width="800 " height="800" style="margin: 20px"></svg>
+<svg id="graph" width="800 " height="800" style="margin: 20px"></svg>
 
 <script>
-    const map = d3.select("svg#map");
 
-    // get svg attributes and set the graph dimensions
-    const mapWidth = map.attr("width") - 20;
-    const mapHeight = map.attr("height") - 20;
+    // select and set canvas
+    const graph = d3.select("svg#graph");
+    const margins = { top: 10, right: 10, bottom: 40, left: 40 };
+    const width = graph.attr("width");
+    const height = graph.attr("height");
+    const graphWidth = width - margins.left - margins.right;
+    const graphHeight = height - margins.top - margins.bottom;
 
 
     const getData = async function () {
 
-        // load the data on the map
-        const sf = await d3.json("./SF-Neighborhoods.geo.json");
+        // create 3 scales
+        let hoursExtent = d3.extent(data, d => d.date)
+        let hoursScale = d3.scaleTime().domain(dateExtent).range([0, graphWidth]);
+        let outputExtent = d3.extent(data, d => d.age)
+        let outputScale = d3.scaleLinear().domain(ageExtent).range([graphHeight, 0]);
+        let employScale = d3.scaleOrdinal(d3.schemeCategory10);
 
-        // examine sf data structure
-        // console.log(sf);
+        // populate the axis
+        let leftAxis = d3.axisLeft(outputScale);
+        let bottomAxis = d3.axisBottom(hoursScale);
 
-        // load the data on the list of trees 
-        const treeList = await d3.csv("./Street_Tree_List-2022-01-30_FILTERED_FINAL.csv");
+        // populate gridlines
+        let leftGridlines = d3.axisLeft(outputScale).tickFormat('').tickSize(-graphWidth - 10);
+        let bottomGridlines = d3.axisBottom(hoursScale).tickFormat('').tickSize(-graphHeight - 10);
 
-        // examine treeList data structure
-        // console.log(treeList);
+        // create 5 g elements    
+        graph.append("g").attr("transform", `translate(${margins.left - 10},${margins.top})`).attr("class", "axis").call(leftAxis);
+        graph.append('g').attr("transform", `translate(${margins.left},${margins.top + graphHeight + 10})`).attr("class", "axis").call(bottomAxis);
+        graph.append('g').attr("transform", `translate(${margins.left - 10},${margins.top})`).attr('class', 'gridlines').call(leftGridlines);
+        graph.append('g').attr("transform", `translate(${margins.left},${graphHeight + margins.top + 10})`).attr('class', 'gridlines').call(bottomGridlines);
+        let chartArea = graph.append('g').attr("transform", `translate(${margins.left},${margins.top})`).attr("class", "chart");
 
-        // load the data for the chart: percentage of DPW-maintained vs non-DPW-maintained trees
-        const density = await d3.csv("./density.csv");
-
-        // examine density data structure 
-        // console.log(density)
-
-        // creating variables for zips and zipsMesh 
-        var zips = topojson.feature(sf, sf.objects.SFNeighborhoods);
-        var zipsMesh = topojson.mesh(sf, sf.objects.SFNeighborhoods);
-
-        // create a projection of latitude and longtitude to coordinates on the map
-        var projection = d3.geoMercator().fitSize([mapWidth, mapHeight], zips);
-        var path = d3.geoPath().projection(projection);
-
-
-        // calculate the percentage of DPW-maintained trees in each neighborhood
-        zips.features.forEach(zip => {
-
-            zip.properties.DPWcount = 0;
-            zip.properties.nonDPWcount = 0;
-
-            treeList.forEach(d => {
-
-                if (d3.geoContains(zip, [d.Longitude, d.Latitude])) {
-                    if (d.qLegalStatus == "DPW Maintained") {
-
-                        zip.properties.DPWcount++;
-                    } else {
-                        zip.properties.nonDPWcount++;
-                    }
-                };
+        // append new circles to chart
+        let jitter = d3.randomUniform(-3, 3);
+        chartArea.selectAll("circle").data(data).join("circle").attr("fill", d => sportScale(d.sport)).attr("cx", d => dateScale(d.date) + jitter()).attr("cy", d => ageScale(d.age)).attr("r", 5).attr("opacity", 0.4)
 
 
-            });
-
-            // create a new variable in the zips dataset to record the percentage of DPW-maintained trees
-            zip.properties.DPWdensity = zip.properties.DPWcount / (zip.properties.DPWcount + zip.properties.nonDPWcount);
-
-        })
-
-        // attempted to bake in the data
-        // console.log(zips);
-        // console.log(JSON.stringify(zips));
-
-        // create a new variable in treeList to record the coordinates of each tree
-        treeList.forEach(d => {
-
-            d.Position = projection([d.Longitude, d.Latitude]);
-
-        });
-
-
-        // create a scale to map DPW vs non-DPW to fill color 
-        var fillScale = d3.scaleOrdinal().domain(['non_PDW', 'DPW Maintained'])
-            .range(['red', 'darkblue']);
-
-        // testing fillScale
-        // console.log(fillScale("DPW Maintained"));
-        // console.log(fillScale("non_DPW"))
-
-        // create a color scale to color the regions by percentage of DPW-maintained trees 
-        let densityExtent = [0, 1];
-        let colorScale = d3.scaleSequential(d3.interpolateViridis).domain(densityExtent);
-
-        // testing colorScale
-        // console.log(colorScale(0.01))
-        // console.log(colorScale(0.91))
-
-        // create a g tag to contain map elements.
-        var viewport = map.append('g').attr("id", "viewport");
-
-        // create a path element for each neighborhood, filling in colors according to percentage 
-        viewport.selectAll("path.zips")
-            .data(zips.features)
-            .join("path")
-            .attr("d", path)
-            .style("stroke", "none")
-            .style("fill", d => colorScale(d.properties.DPWdensity));
-
-        // create a path element for each neighborhood, coloring the outlines
-        let zips_mesh_path = viewport.append("path")
-            .datum(zipsMesh)
-            .attr("d", path)
-            .style("stroke-width", 1)
-            .style("stroke", "black")
-            .style("fill", "none");
-
-        // draw circles on the map, coloring by whether DPW-maintained or not
-        map.selectAll("circle").data(treeList)
-            .join("circle")
-            .attr("r", 1.5)
-            .attr("fill", d => fillScale(d['qLegalStatus']))
-            .attr("opacity", 0.6)
-            .attr("cx", d => d.Position[0])
-            .attr("cy", d => d.Position[1]);
 
 
     }
