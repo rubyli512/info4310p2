@@ -15,9 +15,62 @@
     .gridlines .domain {
         stroke: none;
     }
-</style>
 
-<svg id="graph" width="800 " height="800" style="margin: 20px"></svg>
+    .state {
+          fill: white;
+        }
+
+    .outline {
+          fill: none;
+          stroke: gray;
+          stroke-width: 1px;
+        }
+
+</style>
+<p id = "p1"> 
+    <svg id="choropleth" height="700" width="700"></svg>
+    <script>
+        const svg = d3.select("#choropleth");
+        const width_map = svg.attr("width");
+        const height_map = svg.attr("height");
+        const margin = { top: 20, right: 20, bottom: 20, left:20};
+        const mapWidth = width_map - margin.left - margin.right;
+        const mapHeight = height_map - margin.top - margin.bottom;
+        const map = svg.append("g")
+              .attr("transform","translate("+margin.left+","+margin.top+")");
+              
+
+        const requestData_map = async function() {
+
+            const us = await d3.json("us-smaller.json");
+            console.log(us);
+        
+            var states = topojson.feature(us, us.objects.states); 
+            var statesMesh = topojson.mesh(us, us.objects.states);   
+            var projection = d3.geoAlbersUsa().fitSize([mapWidth, mapHeight], states);
+            var path = d3.geoPath().projection(projection);
+            console.log(states);
+            console.log(statesMesh);
+            
+            
+            
+            let statePaths = map.selectAll("path.state").data(states.features)
+                            .join("path")
+                            .attr("class", "state")
+                            .attr("note", d => d.id)
+                            .attr("d", path)
+        
+            map.append("path").datum(statesMesh)
+            .attr("class","outline")
+            .attr("d", path);
+        
+        }
+        requestData_map();
+
+
+    </script>
+
+<svg id="graph" width="700 " height="700" style="margin: 20px"></svg>
 
 <script>
 
@@ -31,12 +84,17 @@
 
 
     const getData = async function () {
+        const data = await d3.csv("processed_df.csv");
+    
+        console.log(data);
+        years = d3.extent(data, d => d.year)
+        dataInitial = data.filter(d => d.year === years[0])
 
         // create 3 scales
-        let hoursExtent = d3.extent(data, d => d.date)
-        let hoursScale = d3.scaleTime().domain(dateExtent).range([0, graphWidth]);
-        let outputExtent = d3.extent(data, d => d.age)
-        let outputScale = d3.scaleLinear().domain(ageExtent).range([graphHeight, 0]);
+        let hoursExtent = d3.extent(dataInitial, d => d.hours)
+        let hoursScale = d3.scaleLinear().domain(hoursExtent).range([0, graphWidth]);
+        let outputExtent = d3.extent(dataInitial, d => d.output)
+        let outputScale = d3.scaleLinear().domain(outputExtent).range([graphHeight, 0]);
         let employScale = d3.scaleOrdinal(d3.schemeCategory10);
 
         // populate the axis
@@ -55,11 +113,7 @@
         let chartArea = graph.append('g').attr("transform", `translate(${margins.left},${margins.top})`).attr("class", "chart");
 
         // append new circles to chart
-        chartArea.selectAll("circle").data(data).join("circle").attr("fill", "lightblue").attr("cx", d => hoursScale(d.date) + jitter()).attr("cy", d => outputScale(d.age)).attr("r", d => employScale(d.employment)).attr("opacity", 0.8)
-
-
-
-
+        chartArea.selectAll("circle").data(dataInitial).join("circle").attr("fill", "lightblue").attr("cx", d => hoursScale(d.hours)).attr("cy", d => outputScale(d.output)).attr("r", d => employScale(d.employment)).attr("opacity", 0.8);
     }
 
     // call the function
