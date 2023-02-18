@@ -1,0 +1,152 @@
+<html>
+
+<head>
+    <title>INFO 4310 Project 2</title>
+    <meta charset="UTF-8">
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <script src="https://d3js.org/topojson.v3.min.js"></script>
+</head>
+<!-- css style for gridlines -->
+<style>
+    .gridlines line {
+        stroke: rgb(223, 223, 223);
+    }
+
+    .gridlines .domain {
+        stroke: none;
+    }
+</style>
+
+<svg id="map" width="800 " height="800" style="margin: 20px"></svg>
+
+<script>
+    const map = d3.select("svg#map");
+
+    // get svg attributes and set the graph dimensions
+    const mapWidth = map.attr("width") - 20;
+    const mapHeight = map.attr("height") - 20;
+
+
+    const getData = async function () {
+
+        // load the data on the map
+        const sf = await d3.json("./SF-Neighborhoods.geo.json");
+
+        // examine sf data structure
+        // console.log(sf);
+
+        // load the data on the list of trees 
+        const treeList = await d3.csv("./Street_Tree_List-2022-01-30_FILTERED_FINAL.csv");
+
+        // examine treeList data structure
+        // console.log(treeList);
+
+        // load the data for the chart: percentage of DPW-maintained vs non-DPW-maintained trees
+        const density = await d3.csv("./density.csv");
+
+        // examine density data structure 
+        // console.log(density)
+
+        // creating variables for zips and zipsMesh 
+        var zips = topojson.feature(sf, sf.objects.SFNeighborhoods);
+        var zipsMesh = topojson.mesh(sf, sf.objects.SFNeighborhoods);
+
+        // create a projection of latitude and longtitude to coordinates on the map
+        var projection = d3.geoMercator().fitSize([mapWidth, mapHeight], zips);
+        var path = d3.geoPath().projection(projection);
+
+
+        // calculate the percentage of DPW-maintained trees in each neighborhood
+        zips.features.forEach(zip => {
+
+            zip.properties.DPWcount = 0;
+            zip.properties.nonDPWcount = 0;
+
+            treeList.forEach(d => {
+
+                if (d3.geoContains(zip, [d.Longitude, d.Latitude])) {
+                    if (d.qLegalStatus == "DPW Maintained") {
+
+                        zip.properties.DPWcount++;
+                    } else {
+                        zip.properties.nonDPWcount++;
+                    }
+                };
+
+
+            });
+
+            // create a new variable in the zips dataset to record the percentage of DPW-maintained trees
+            zip.properties.DPWdensity = zip.properties.DPWcount / (zip.properties.DPWcount + zip.properties.nonDPWcount);
+
+        })
+
+        // attempted to bake in the data
+        // console.log(zips);
+        // console.log(JSON.stringify(zips));
+
+        // create a new variable in treeList to record the coordinates of each tree
+        treeList.forEach(d => {
+
+            d.Position = projection([d.Longitude, d.Latitude]);
+
+        });
+
+
+        // create a scale to map DPW vs non-DPW to fill color 
+        var fillScale = d3.scaleOrdinal().domain(['non_PDW', 'DPW Maintained'])
+            .range(['red', 'darkblue']);
+
+        // testing fillScale
+        // console.log(fillScale("DPW Maintained"));
+        // console.log(fillScale("non_DPW"))
+
+        // create a color scale to color the regions by percentage of DPW-maintained trees 
+        let densityExtent = [0, 1];
+        let colorScale = d3.scaleSequential(d3.interpolateViridis).domain(densityExtent);
+
+        // testing colorScale
+        // console.log(colorScale(0.01))
+        // console.log(colorScale(0.91))
+
+        // create a g tag to contain map elements.
+        var viewport = map.append('g').attr("id", "viewport");
+
+        // create a path element for each neighborhood, filling in colors according to percentage 
+        viewport.selectAll("path.zips")
+            .data(zips.features)
+            .join("path")
+            .attr("d", path)
+            .style("stroke", "none")
+            .style("fill", d => colorScale(d.properties.DPWdensity));
+
+        // create a path element for each neighborhood, coloring the outlines
+        let zips_mesh_path = viewport.append("path")
+            .datum(zipsMesh)
+            .attr("d", path)
+            .style("stroke-width", 1)
+            .style("stroke", "black")
+            .style("fill", "none");
+
+        // draw circles on the map, coloring by whether DPW-maintained or not
+        map.selectAll("circle").data(treeList)
+            .join("circle")
+            .attr("r", 1.5)
+            .attr("fill", d => fillScale(d['qLegalStatus']))
+            .attr("opacity", 0.6)
+            .attr("cx", d => d.Position[0])
+            .attr("cy", d => d.Position[1]);
+
+
+    }
+
+    // call the function
+    getData();
+
+</script>
+
+<body>
+
+</body>
+
+</html>
