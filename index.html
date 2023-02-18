@@ -55,8 +55,7 @@
         let chartArea = graph.append('g').attr("transform", `translate(${margins.left},${margins.top})`).attr("class", "chart");
 
         // append new circles to chart
-        let jitter = d3.randomUniform(-3, 3);
-        chartArea.selectAll("circle").data(data).join("circle").attr("fill", d => sportScale(d.sport)).attr("cx", d => dateScale(d.date) + jitter()).attr("cy", d => ageScale(d.age)).attr("r", 5).attr("opacity", 0.4)
+        chartArea.selectAll("circle").data(data).join("circle").attr("fill", "lightblue").attr("cx", d => hoursScale(d.date) + jitter()).attr("cy", d => outputScale(d.age)).attr("r", 5).attr("opacity", 0.4)
 
 
 
