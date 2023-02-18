@@ -69,7 +69,7 @@
                 .data(states.features)
                 .join("path")
                 .attr("d", path)
-                .attr("class","state")
+                .attr("class", "state")
                 .style("fill", d => colorScale(d.properties.percent_artists)).style("stroke", "none");
 
             // map.selectAll("state").style("fill", d => colorScale(d.properties.percent_artists))
@@ -87,58 +87,124 @@
     </script>
 
     <svg id="graph" width="700 " height="700" style="margin: 20px"></svg>
+    <input id="slider" type="range" min="2007" max="2021" step="1" />
+<div class="buttons">
+    <button>Back</button>
+    <button>Forward</button>
+</div>
 
-    <script>
+<script>
 
-        // select and set canvas
-        const graph = d3.select("svg#graph");
-        const margins = { top: 10, right: 10, bottom: 40, left: 40 };
-        const width = graph.attr("width");
-        const height = graph.attr("height");
-        const graphWidth = width - margins.left - margins.right;
-        const graphHeight = height - margins.top - margins.bottom;
+    // select and set canvas
+    const graph = d3.select("svg#graph");
+    // const graph = canvas.append('g').attr("id","graph_area");
+    const margins = { top: 40, right: 40, bottom: 40, left: 40 };
+    const width = graph.attr("width");
+    const height = graph.attr("height");
+    const graphWidth = width - margins.left - margins.right;
+    const graphHeight = height - margins.top - margins.bottom;
 
 
-        const getData = async function () {
-            const data = await d3.csv("processed_df.csv");
 
-            console.log(data);
-            years = d3.extent(data, d => d.year)
-            dataInitial = data.filter(d => d.year === years[0])
+    const getData = async function (sl_year) {
+        const data = await d3.csv("processed_df.csv", d3.autoType);
 
-            // create 3 scales
-            let hoursExtent = d3.extent(dataInitial, d => d.hours)
-            let hoursScale = d3.scaleLinear().domain(hoursExtent).range([0, graphWidth]);
-            let outputExtent = d3.extent(dataInitial, d => d.output)
-            let outputScale = d3.scaleLinear().domain(outputExtent).range([graphHeight, 0]);
-            let employScale = d3.scaleOrdinal(d3.schemeCategory10);
+        console.log(data);
+        // years = d3.extent(data, d => d.year)
+        sl_year = parseInt(sl_year);
+        dataInitial = data.filter(d => d.year === sl_year)
+        console.log(dataInitial);
 
-            // populate the axis
-            let leftAxis = d3.axisLeft(outputScale);
-            let bottomAxis = d3.axisBottom(hoursScale);
+        // create 3 scales
+        let hoursExtent = d3.extent(dataInitial, d => d.hours)
+        let hoursScale = d3.scaleLog().domain(hoursExtent).range([0, graphWidth]);
+        let outputExtent = d3.extent(dataInitial, d => d.output)
+        let outputScale = d3.scaleLog().domain(outputExtent).range([graphHeight, 0]);
+        let employScale = d3.scaleSqrt()
+            .domain(d3.extent(dataInitial, d => d.employment))
+            .range([5, 15])
+        let colorScale = d3.scaleOrdinal(d3.schemeCategory10);
 
-            // populate gridlines
-            let leftGridlines = d3.axisLeft(outputScale).tickFormat('').tickSize(-graphWidth - 10);
-            let bottomGridlines = d3.axisBottom(hoursScale).tickFormat('').tickSize(-graphHeight - 10);
+        const hoursLabel = graph.append('text')
+            .attr('text-anchor', 'end')
+            .attr('class', 'year')
+            .attr('x', width - margin.right)
+            .attr('y', -100)
+            .attr('fill', 'black')
+            .attr('font-weight', 'bold')
+            .attr('font-size', '12px')
+            .text("Hours");
 
-            // create 5 g elements    
-            graph.append("g").attr("transform", `translate(${margins.left - 10},${margins.top})`).attr("class", "axis").call(leftAxis);
-            graph.append('g').attr("transform", `translate(${margins.left},${margins.top + graphHeight + 10})`).attr("class", "axis").call(bottomAxis);
-            graph.append('g').attr("transform", `translate(${margins.left - 10},${margins.top})`).attr('class', 'gridlines').call(leftGridlines);
-            graph.append('g').attr("transform", `translate(${margins.left},${graphHeight + margins.top + 10})`).attr('class', 'gridlines').call(bottomGridlines);
-            let chartArea = graph.append('g').attr("transform", `translate(${margins.left},${margins.top})`).attr("class", "chart");
+        const outputLabel = graph.append('text')
+            .attr('class', 'year')
+            .attr('transform', `translate(20, ${margin.top}) rotate(-90)`)
+            .attr('text-anchor', 'end')
+            .attr('fill', '#black')
+            .attr('font-weight', 'bold')
+            .attr('font-size', '12px')
+            .text("Output");
+        const yearLabel = graph.append('text')
+            .attr('class', 'year')
+            .attr('x', 40)
+            .attr('y', height - margin.bottom - 600)
+            .attr('fill', '#ccc')
+            .attr('font-family', 'Helvetica Neue, Arial')
+            .attr('font-weight', 500)
+            .attr('font-size', 80)
+            .text(sl_year);
 
-            // append new circles to chart
-            chartArea.selectAll("circle").data(dataInitial).join("circle").attr("fill", "lightblue").attr("cx", d => hoursScale(d.hours)).attr("cy", d => outputScale(d.output)).attr("r", d => employScale(d.employment)).attr("opacity", 0.8);
-        }
+        // populate the axis
+        let leftAxis = d3.axisLeft(outputScale);
+        let bottomAxis = d3.axisBottom(hoursScale);
 
-        // call the function
-        getData();
+        // populate gridlines
+        let leftGridlines = d3.axisLeft(outputScale).tickFormat('').tickSize(-graphWidth - 10);
+        let bottomGridlines = d3.axisBottom(hoursScale).tickFormat('').tickSize(-graphHeight - 10);
 
-    </script>
+        // create 5 g elements    
+        graph.append("g").attr("transform", `translate(${margins.left - 10},${margins.top})`).attr("class", "axis").call(leftAxis);
+        graph.append('g').attr("transform", `translate(${margins.left},${margins.top + graphHeight + 10})`).attr("class", "axis").call(bottomAxis);
+        graph.append('g').attr("transform", `translate(${margins.left - 10},${margins.top})`).attr('class', 'gridlines').call(leftGridlines);
+        graph.append('g').attr("transform", `translate(${margins.left},${graphHeight + margins.top + 10})`).attr('class', 'gridlines').call(bottomGridlines);
+        let chartArea = graph.append('g').attr("transform", `translate(${margins.left},${margins.top})`).attr("class", "chart");
 
-    <body>
+        let state_region_mapping = {
+            'Washington': 'West', 'Oregon': 'West', 'California': 'West', 'Nevada': 'West',
+            'Idaho': 'West', 'Montana': 'West', 'Wyoming': 'West', 'Utah': 'West',
+            'Colorado': 'West', 'Alaska': 'West', 'Hawaii': 'West', 'Maine': 'Northeast',
+            'Vermont': 'Northeast', 'New York': 'Northeast', 'New Hampshire': 'Northeast',
+            'Massachusetts': 'Northeast', 'Rhode Island': 'Northeast', 'Connecticut': 'Northeast',
+            'New Jersey': 'Northeast', 'Pennsylvania': 'Northeast', 'North Dakota': 'Midwest',
+            'South Dakota': 'Midwest', 'Nebraska': 'Midwest', 'Kansas': 'Midwest',
+            'Minnesota': 'Midwest', 'Iowa': 'Midwest', 'Missouri': 'Midwest', 'Wisconsin': 'Midwest',
+            'Illinois': 'Midwest', 'Michigan': 'Midwest', 'Indiana': 'Midwest', 'Ohio': 'Midwest',
+            'West Virginia': 'South', 'District of Columbia': 'South', 'Maryland': 'South',
+            'Virginia': 'South', 'Kentucky': 'South', 'Tennessee': 'South', 'North Carolina': 'South',
+            'Mississippi': 'South', 'Arkansas': 'South', 'Louisiana': 'South', 'Alabama': 'South',
+            'Georgia': 'South', 'South Carolina': 'South', 'Florida': 'South', 'Delaware': 'South',
+            'Arizona': 'Southwest', 'New Mexico': 'Southwest', 'Oklahoma': 'Southwest',
+            'Texas': 'Southwest'
+        };
+        let regions = ['South', 'Southwest', 'West', 'Midwest', 'Northeast'];
 
-    </body>
+        let circles = chartArea.selectAll("circle").data(dataInitial).join("circle").attr("fill", d => colorScale(state_region_mapping[d.state])).attr("cx", d => hoursScale(d.hours)).attr("cy", d => outputScale(d.output)).attr("r", d => employScale(d.employment)).attr("opacity", 0.8);
+        
+    }
+
+
+    getData(2007);
+
+    d3.select("#slider").on("input", function (event) {
+        let selected_year = event.target.value;
+        console.log(selected_year);
+        // graph.selectAll('*').remove();
+        getData(selected_year);
+    });
+
+</script>
+
+<body>
+
+</body>
 
 </html>
