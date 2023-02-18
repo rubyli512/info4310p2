@@ -55,7 +55,7 @@
         let chartArea = graph.append('g').attr("transform", `translate(${margins.left},${margins.top})`).attr("class", "chart");
 
         // append new circles to chart
-        chartArea.selectAll("circle").data(data).join("circle").attr("fill", "lightblue").attr("cx", d => hoursScale(d.date) + jitter()).attr("cy", d => outputScale(d.age)).attr("r", 5).attr("opacity", 0.4)
+        chartArea.selectAll("circle").data(data).join("circle").attr("fill", "lightblue").attr("cx", d => hoursScale(d.date) + jitter()).attr("cy", d => outputScale(d.age)).attr("r", d => employScale(d.employment)).attr("opacity", 0.8)
 
 
 
