@@ -547,6 +547,8 @@
             }
             let curr_year = 2007;
             let table = d3.select('#table');
+            let text_year = d3.select("#text_year");
+            
             d3.select("#slider").on("input", function(event) {
                 let selected_year = event.target.value;
                 // console.log(selected_year);
@@ -554,8 +556,12 @@
                 getData(selected_year);
                 requestData_map(selected_year);
                 table.selectAll('*').remove();
-                requestData_table(selected_year,"all");
+                requestDatas_table(selected_year,"all");
                 curr_year = selected_year;
+
+                // text_year.selectAll('*').remove()
+                let print_text = text_year.append("text").text(selected_year).attr("x",100).attr("y",100).style("font", "20px Verdana").style("fill", "darkred");
+                console.log(print_text);
 
                 // const yearLabel = graph.append('text')
                 //     .attr('class', 'year')
