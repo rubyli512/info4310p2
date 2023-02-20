@@ -44,7 +44,7 @@
         const map = svg.append("g")
             .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
 
-        const requestData_map = async function() {
+        const requestData_map = async function () {
 
             const us = await d3.json("us-smaller.json");
             console.log(us);
@@ -221,14 +221,14 @@
     // select and set canvas
     const graph = d3.select("svg#graph");
     // const graph = canvas.append('g').attr("id","graph_area");
-    const margins = { top: 40, right: 40, bottom: 40, left: 40 };
+    const margins = { top: 60, right: 60, bottom: 40, left: 40 };
     const width = graph.attr("width");
     const height = graph.attr("height");
     const graphWidth = width - margins.left - margins.right;
     const graphHeight = height - margins.top - margins.bottom;
-    let annotations = graph.append("g").attr("id","annotations");
-    let chartArea = graph.append("g").attr("id","points")
-                    .attr("transform",`translate(${margins.left},${margins.top})`);
+    let annotations = graph.append("g").attr("id", "annotations");
+    let chartArea = graph.append("g").attr("id", "points")
+        .attr("transform", `translate(${margins.left},${margins.top})`);
 
 
     d3.csv("processed_df.csv", d3.autoType).then((data) => {
@@ -255,12 +255,25 @@
         annotations.append("g").attr("transform", `translate(${margins.left - 10},${margins.top})`).attr("class", "axis").call(leftAxis);
         annotations.append('g').attr("transform", `translate(${margins.left - 10},${margins.top})`).attr('class', 'gridlines').call(leftGridlines);
 
+
+
+
+
         let bottomAxis = d3.axisBottom();
         let bottomAxisG = annotations.append('g').attr("transform", `translate(${margins.left},${margins.top + graphHeight + 10})`).attr("class", "axis");
         let employScale = d3.scaleSqrt()
             .domain(d3.extent(this_data, d => d.employment))
-            .range([5, 15])
+            .range([10, 30])
         let colorScale = d3.scaleOrdinal(d3.schemeCategory10);
+
+        const hoursExtent = d3.extent(data, d => d.hours)
+        const hoursScale = d3.scaleLog().domain(hoursExtent).range([0, graphWidth]);
+        console.log(hoursScale);
+
+        bottomAxis.scale(hoursScale);
+        console.log(bottomAxis);
+        bottomAxisG.transition().call(bottomAxis);
+
 
         // const hoursLabel = graph.append('text')
         //     .attr('text-anchor', 'end')
@@ -289,11 +302,11 @@
         //     .attr('font-weight', 500)
         //     .attr('font-size', 80)
         //     .text(sl_year);
-        
+
 
         // populate the axis
 
-        
+
 
         // populate gridlines
         // let bottomGridlines = d3.axisBottom(hoursScale).tickFormat('').tickSize(-graphHeight - 10);
@@ -335,32 +348,25 @@
             dataInitial = data.filter(d => d.year === sl_year);
             console.log(dataInitial)
 
-            const hoursExtent = d3.extent(dataInitial, d => d.hours)
-            const hoursScale = d3.scaleLog().domain(hoursExtent).range([0, graphWidth]);
-            console.log(hoursScale);
-
-            bottomAxis.scale(hoursScale);
-            console.log(bottomAxis);
-            bottomAxisG.transition().call(bottomAxis);
 
             const hoursLabel = graph.append('text')
-            .attr('text-anchor', 'end')
-            .attr('class', 'year')
-            .attr('x', width - margin.right)
-            .attr('y', -100)
-            .attr('fill', 'black')
-            .attr('font-weight', 'bold')
-            .attr('font-size', '12px')
-            .text("Hours");
+                .attr('text-anchor', 'end')
+                .attr('class', 'year')
+                .attr('x', width - margin.right)
+                .attr('y', -100)
+                .attr('fill', 'black')
+                .attr('font-weight', 'bold')
+                .attr('font-size', '12px')
+                .text("Hours");
 
-        const outputLabel = graph.append('text')
-            .attr('class', 'year')
-            .attr('transform', `translate(20, ${margin.top}) rotate(-90)`)
-            .attr('text-anchor', 'end')
-            .attr('fill', '#black')
-            .attr('font-weight', 'bold')
-            .attr('font-size', '12px')
-            .text("Output");
+            const outputLabel = graph.append('text')
+                .attr('class', 'year')
+                .attr('transform', `translate(20, ${margin.top}) rotate(-90)`)
+                .attr('text-anchor', 'end')
+                .attr('fill', '#black')
+                .attr('font-weight', 'bold')
+                .attr('font-size', '12px')
+                .text("Output");
 
 
             chartArea.selectAll("circle")
@@ -372,17 +378,17 @@
                         .attr("cy", d => outputScale(d.output))
                         .attr("r", d => employScale(d.employment))
                         .attr("opacity", 0.8)
-                    .call(enter => enter.transition().attr("opacity", 1))
+                        .call(enter => enter.transition().attr("opacity", 0.8))
                     ,
                     update => update.call(update => update.transition()
                         .attr("fill", d => colorScale(state_region_mapping[d.state]))
                         .attr("cx", d => hoursScale(d.hours))
                         .attr("cy", d => outputScale(d.output))
                         .attr("r", d => employScale(d.employment))),
-                        // .call( update => update.transition().duration(100)),
-                        exit => exit.call( exit => exit.transition().attr('opacity',0).remove() ) 
+                    // .call( update => update.transition().duration(100)),
+                    exit => exit.call(exit => exit.transition().attr('opacity', 0).remove())
                     // exit => exit
-                    )
+                )
                 ;
         }
 
@@ -404,7 +410,7 @@
         });
 
 
-    getData(2007);
+        getData(2007);
     })
 
 </script>
