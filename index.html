@@ -408,6 +408,13 @@
             //     .attr('font-size', 80)
             //     .text(selected_year);
         });
+        
+        d3.select("button#back").on("click", function(event){
+            getData(2007);
+        })
+        d3.select("button#forward").on("click", function(event){
+            getData(2021);
+        })
 
 
         getData(2007);
