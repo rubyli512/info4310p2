@@ -11,23 +11,33 @@
     .gridlines line {
         stroke: rgb(223, 223, 223);
     }
-
+    
     .gridlines .domain {
         stroke: none;
     }
-
+    
     .state {
         fill: white;
     }
-
+    
     .outline {
         fill: none;
         stroke: gray;
         stroke-width: 1px;
     }
+
+    .main{
+        display: flex;
+        flex-direction: row;
+    }
+
+    .right{
+        display: flex;
+        flex-direction: column;
+    }
 </style>
-<p id="p1">
-    <svg id="map" height="700" width="700"></svg>
+<div class="main">
+    <svg id="map" height="500" width="500"></svg>
 
     <script>
         const svg = d3.select("#map");
@@ -44,16 +54,13 @@
         const map = svg.append("g")
             .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
 
-        const requestData_map = async function () {
+        const requestData_map = async function(sl_year) {
 
             const us = await d3.json("us-smaller.json");
-            console.log(us);
             var states = topojson.feature(us, us.objects.states);
             var statesMesh = topojson.mesh(us, us.objects.states);
             var projection = d3.geoAlbersUsa().fitSize([mapWidth, mapHeight], states);
             var path = d3.geoPath().projection(projection);
-            console.log(states);
-            console.log(statesMesh);
 
 
             let abbv = us_state_to_abbrev = {
@@ -170,234 +177,238 @@
                 'SD': '46'
             };
             // load dataset
-            const data = await d3.csv("processed_df.csv", d3.autoType);
+            let data = await d3.csv("processed_df.csv", d3.autoType);
+            data = data.filter(d => d.year === parseInt(sl_year));
             // const data = d3.select("processed_df.csv");
             let compExtent = d3.extent(data, d => d.pay);
             let compScale = d3.scaleSequential(d3.interpolateViridis).domain(compExtent);
             let payScale = d3.scaleQuantile()
                 .domain(d3.extent(data, d => d.pay))
                 .range(["#D3D3D3", "#d1e8ed", "#adc2da", "#8879b3", "#762b80"]);
-            // let statePaths = map.selectAll("path.state").data(states.features)
-            //     .join("path")
-            //     .attr("class", "state")
-            //     .attr("note", d => d.state)
-            //     .attr("d", path)
-            //     .style("fill", d => compScale(d.pay))
-            //     .style("stroke", "none");
+
             let stateIdCounts = {}
             data.forEach(row => {
 
                 stateIdCounts[fips_codes[abbv[row.state]]] = row.pay;
             });
+
             let statesPath = map.selectAll("path.state")
                 .data(states.features)
-                .join("path")
-                .attr("d", path)
-                .attr("class", "state")
-                .style("fill", d => {
-                    let color = payScale(
-                        stateIdCounts[d.id]);
-                    return color;
-                }).style("stroke", "none");
-
+                .join(
+                    enter => enter.append("path").attr("d", path)
+                    .attr("class", "state")
+                    .style("fill", d => payScale(
+                        stateIdCounts[d.id])).call(enter => enter.transition().attr("opacity", 0.8)),
+                    update => update.call(update => update.transition().style("fill", d => payScale(
+                        stateIdCounts[d.id]))),
+                    exit => exit.call(exit => exit.transition().attr('opacity', 0).remove())
+                );
+            map.selectAll('.outline').remove();
+            map.append("path").datum(statesMesh)
+                .attr("class", "outline")
+                .attr("d", path);
             // map.selectAll("state").style("fill", d => colorScale(d.properties.percent_artists))
 
 
+            function getKeyByValue(object, value) {
+                return Object.keys(object).find(key => object[key] === value);
+            }
+
+            // let haha = {'a':3,'b':4};
+            // console.log(getKeyByValue(haha,4));
+
+
+
+            let table = d3.select('#table');
+            map.selectAll(".state").on("click",clicked);
+            
+
+            function clicked(event, d){
+                // console.log(typeof event.target.__data__.id.toString());
+                let this_state_code = event.target.__data__.id
+                this_state_code = this_state_code < 10 ? ('0' + this_state_code).toString() : this_state_code.toString();
+                let this_abbr = getKeyByValue(state_codes, this_state_code);
+                let this_state = getKeyByValue(us_state_to_abbrev, this_abbr);
+                table.selectAll('*').remove();
+                requestData_table(sl_year,this_state);
+            }
+
+
         }
-        requestData_map();
-
-
+        requestData_map(2007);
     </script>
 
-    <svg id="graph" width="700 " height="700" style="margin: 20px"></svg>
-    <input id="slider" type="range" min="2007" max="2021" step="1" />
-<div class="buttons">
-    <button>Back</button>
-    <button>Forward</button>
-</div>
+    <div class = "middle">
+        <table id="table">
+        </table>
+    </div>
+    <script>
 
-<script>
+        const requestData_table = async function(sl_year, states) {
+            let table = d3.select('#table');
+            let data = await d3.csv("processed_df.csv", d3.autoType);
+            data = data.filter(d => d.year === parseInt(sl_year));
+            console.log(data);
 
-    // select and set canvas
-    const graph = d3.select("svg#graph");
-    // const graph = canvas.append('g').attr("id","graph_area");
-    const margins = { top: 60, right: 60, bottom: 40, left: 40 };
-    const width = graph.attr("width");
-    const height = graph.attr("height");
-    const graphWidth = width - margins.left - margins.right;
-    const graphHeight = height - margins.top - margins.bottom;
-    let annotations = graph.append("g").attr("id", "annotations");
-    let chartArea = graph.append("g").attr("id", "points")
-        .attr("transform", `translate(${margins.left},${margins.top})`);
+            let table_data;
+            if (states == "all"){
+                let pay = 0;
+                let hours = 0;
+                let output = 0;
+                let employment = 0;
+                for (let i = 0; i < data.length; i++){
+                    pay += data[i].pay;
+                    hours += data[i].hours;
+                    output += data[i].output;
+                    employment += data[i].employment;
+                }
 
+                table_data = [
+                { "type" : 'Pay', "data" : pay.toFixed(2) },
+                { "type" : 'Hours', "data" : hours.toFixed(2) },
+                { "type" : 'Output', "data" : output.toFixed(2) },
+                { "type" : 'Employment', "data" : employment.toFixed(2) }];
+            }else{
+                this_state = data.filter(d => d.state === states);
+                console.log(this_state);
+                table_data = [
+                { "type" : 'Pay', "data" : this_state[0]['pay'].toFixed(2) },
+                { "type" : 'Hours', "data" : this_state[0]['hours'].toFixed(2) },
+                { "type" : 'Output', "data" : this_state[0]['output'].toFixed(2) },
+                { "type" : 'Employment', "data" : this_state[0]['employment'].toFixed(2) }];
+            }
+            
+                    
+        function tabulate(data, columns) {
+                var table = d3.select('#table');
+                var thead = table.append('thead');
+                var	tbody = table.append('tbody');
 
-    d3.csv("processed_df.csv", d3.autoType).then((data) => {
+                // append the header row
+                thead.append('tr')
+                .selectAll('th')
+                .data(columns).enter()
+                .append('th')
+                    .text(function (column) { return column; });
 
-        // sl_year = 2007;
+                // create a row for each object in the data
+                var rows = tbody.selectAll('tr')
+                .data(data)
+                .enter()
+                .append('tr');
 
-        // const data = await d3.csv("processed_df.csv", d3.autoType);
+                // create a cell in each row for each column
+                var cells = rows.selectAll('td')
+                .data(function (row) {
+                    return columns.map(function (column) {
+                    return {column: column, value: row[column]};
+                    });
+                })
+                .enter()
+                .append('td')
+                    .text(function (d) { return d.value; });
 
-        console.log(data);
-        // years = d3.extent(data, d => d.year)
-        // sl_year = parseInt(sl_year);
-        // dataInitial = data.filter(d => d.year === sl_year)
-        // console.log(dataInitial);
-        const this_data = data.filter(d => d.year === 2007)
+            return table;
+            }
 
-        // create 3 scales
-        // let hoursExtent = d3.extent(dataInitial, d => d.hours)
-        // let hoursScale = d3.scaleLog().domain(hoursExtent).range([0, graphWidth]);
-
-        let outputExtent = d3.extent(this_data, d => d.output)
-        let outputScale = d3.scaleLog().domain(outputExtent).range([graphHeight, 0]);
-        let leftAxis = d3.axisLeft(outputScale);
-        let leftGridlines = d3.axisLeft(outputScale).tickFormat('').tickSize(-graphWidth - 10);
-        annotations.append("g").attr("transform", `translate(${margins.left - 10},${margins.top})`).attr("class", "axis").call(leftAxis);
-        annotations.append('g').attr("transform", `translate(${margins.left - 10},${margins.top})`).attr('class', 'gridlines').call(leftGridlines);
-
-
-
-
-
-        let bottomAxis = d3.axisBottom();
-        let bottomAxisG = annotations.append('g').attr("transform", `translate(${margins.left},${margins.top + graphHeight + 10})`).attr("class", "axis");
-        let employScale = d3.scaleSqrt()
-            .domain(d3.extent(this_data, d => d.employment))
-            .range([10, 30])
-        let colorScale = d3.scaleOrdinal(d3.schemeCategory10);
-
-        const hoursExtent = d3.extent(data, d => d.hours)
-        const hoursScale = d3.scaleLog().domain(hoursExtent).range([0, graphWidth]);
-        console.log(hoursScale);
-
-        bottomAxis.scale(hoursScale);
-        console.log(bottomAxis);
-        bottomAxisG.transition().call(bottomAxis);
-
-
-        // const hoursLabel = graph.append('text')
-        //     .attr('text-anchor', 'end')
-        //     .attr('class', 'year')
-        //     .attr('x', width - margin.right)
-        //     .attr('y', -100)
-        //     .attr('fill', 'black')
-        //     .attr('font-weight', 'bold')
-        //     .attr('font-size', '12px')
-        //     .text("Hours");
-
-        // const outputLabel = graph.append('text')
-        //     .attr('class', 'year')
-        //     .attr('transform', `translate(20, ${margin.top}) rotate(-90)`)
-        //     .attr('text-anchor', 'end')
-        //     .attr('fill', '#black')
-        //     .attr('font-weight', 'bold')
-        //     .attr('font-size', '12px')
-        //     .text("Output");
-        // const yearLabel = graph.append('text')
-        //     .attr('class', 'year')
-        //     .attr('x', 40)
-        //     .attr('y', height - margin.bottom - 600)
-        //     .attr('fill', '#ccc')
-        //     .attr('font-family', 'Helvetica Neue, Arial')
-        //     .attr('font-weight', 500)
-        //     .attr('font-size', 80)
-        //     .text(sl_year);
-
-
-        // populate the axis
-
-
-
-        // populate gridlines
-        // let bottomGridlines = d3.axisBottom(hoursScale).tickFormat('').tickSize(-graphHeight - 10);
-
-        // create 5 g elements    
-        // annotations.append('g').attr("transform", `translate(${margins.left},${graphHeight + margins.top + 10})`).attr('class', 'gridlines');
-        // let chartArea = graph.append('g').attr("transform", `translate(${margins.left},${margins.top})`).attr("class", "chart");
-
-        let state_region_mapping = {
-            'Washington': 'West', 'Oregon': 'West', 'California': 'West', 'Nevada': 'West',
-            'Idaho': 'West', 'Montana': 'West', 'Wyoming': 'West', 'Utah': 'West',
-            'Colorado': 'West', 'Alaska': 'West', 'Hawaii': 'West', 'Maine': 'Northeast',
-            'Vermont': 'Northeast', 'New York': 'Northeast', 'New Hampshire': 'Northeast',
-            'Massachusetts': 'Northeast', 'Rhode Island': 'Northeast', 'Connecticut': 'Northeast',
-            'New Jersey': 'Northeast', 'Pennsylvania': 'Northeast', 'North Dakota': 'Midwest',
-            'South Dakota': 'Midwest', 'Nebraska': 'Midwest', 'Kansas': 'Midwest',
-            'Minnesota': 'Midwest', 'Iowa': 'Midwest', 'Missouri': 'Midwest', 'Wisconsin': 'Midwest',
-            'Illinois': 'Midwest', 'Michigan': 'Midwest', 'Indiana': 'Midwest', 'Ohio': 'Midwest',
-            'West Virginia': 'South', 'District of Columbia': 'South', 'Maryland': 'South',
-            'Virginia': 'South', 'Kentucky': 'South', 'Tennessee': 'South', 'North Carolina': 'South',
-            'Mississippi': 'South', 'Arkansas': 'South', 'Louisiana': 'South', 'Alabama': 'South',
-            'Georgia': 'South', 'South Carolina': 'South', 'Florida': 'South', 'Delaware': 'South',
-            'Arizona': 'Southwest', 'New Mexico': 'Southwest', 'Oklahoma': 'Southwest',
-            'Texas': 'Southwest'
-        };
-        let regions = ['South', 'Southwest', 'West', 'Midwest', 'Northeast'];
-
-        // chartArea.selectAll("circle").data(dataInitial).join("circle")
-        //     .attr("fill", d => colorScale(state_region_mapping[d.state]))
-        //     .attr("cx", d => hoursScale(d.hours))
-        //     .attr("cy", d => outputScale(d.output))
-        //     .attr("r", d => employScale(d.employment))
-        //     .attr("opacity", 0.8);
-
-        // getData(2007);
-
-        function getData(sl_year) {
-            sl_year = parseInt(sl_year);
-            dataInitial = data.filter(d => d.year === sl_year);
-            console.log(dataInitial)
-
-
-            const hoursLabel = graph.append('text')
-                .attr('text-anchor', 'end')
-                .attr('class', 'year')
-                .attr('x', width - margin.right)
-                .attr('y', -100)
-                .attr('fill', 'black')
-                .attr('font-weight', 'bold')
-                .attr('font-size', '12px')
-                .text("Hours");
-
-            const outputLabel = graph.append('text')
-                .attr('class', 'year')
-                .attr('transform', `translate(20, ${margin.top}) rotate(-90)`)
-                .attr('text-anchor', 'end')
-                .attr('fill', '#black')
-                .attr('font-weight', 'bold')
-                .attr('font-size', '12px')
-                .text("Output");
-
-
-            chartArea.selectAll("circle")
-                .data(dataInitial)
-                .join(
-                    enter => enter.append("circle")
-                        .attr("fill", d => colorScale(state_region_mapping[d.state]))
-                        .attr("cx", d => hoursScale(d.hours))
-                        .attr("cy", d => outputScale(d.output))
-                        .attr("r", d => employScale(d.employment))
-                        .attr("opacity", 0.8)
-                        .call(enter => enter.transition().attr("opacity", 0.8))
-                    ,
-                    update => update.call(update => update.transition()
-                        .attr("fill", d => colorScale(state_region_mapping[d.state]))
-                        .attr("cx", d => hoursScale(d.hours))
-                        .attr("cy", d => outputScale(d.output))
-                        .attr("r", d => employScale(d.employment))),
-                    // .call( update => update.transition().duration(100)),
-                    exit => exit.call(exit => exit.transition().attr('opacity', 0).remove())
-                    // exit => exit
-                )
-                ;
+            // render the tables
+            tabulate(table_data, ['type', 'data']); // 2 column table
         }
+        requestData_table(2007, "all");
+        
+    </script>
 
-        d3.select("#slider").on("input", function (event) {
-            let selected_year = event.target.value;
-            console.log(selected_year);
-            // graph.selectAll('*').remove();
-            getData(selected_year);
+    <div class = "right">
+        <svg id="graph" width="500 " height="500" style="margin: 20px"></svg>
+        <input id="slider" type="range" min="2007" max="2021" value="2007" step="1" />
+        <div class="buttons">
+        <button id="back">Back</button>
+        <button id="forward">Forward</button>
+    </div>
+    </div>
+    
 
+    <script>
+        // select and set canvas
+        const graph = d3.select("svg#graph");
+        // const graph = canvas.append('g').attr("id","graph_area");
+        const margins = {
+            top: 60,
+            right: 60,
+            bottom: 40,
+            left: 40
+        };
+        const width = graph.attr("width");
+        const height = graph.attr("height");
+        const graphWidth = width - margins.left - margins.right;
+        const graphHeight = height - margins.top - margins.bottom;
+        let annotations = graph.append("g").attr("id", "annotations");
+        let chartArea = graph.append("g").attr("id", "points")
+            .attr("transform", `translate(${margins.left},${margins.top})`);
+
+
+        d3.csv("processed_df.csv", d3.autoType).then((data) => {
+
+            // sl_year = 2007;
+
+            // const data = await d3.csv("processed_df.csv", d3.autoType);
+
+            // console.log(data);
+            // years = d3.extent(data, d => d.year)
+            // sl_year = parseInt(sl_year);
+            // dataInitial = data.filter(d => d.year === sl_year)
+            // console.log(dataInitial);
+            const this_data = data.filter(d => d.year === 2007)
+
+            // create 3 scales
+            // let hoursExtent = d3.extent(dataInitial, d => d.hours)
+            // let hoursScale = d3.scaleLog().domain(hoursExtent).range([0, graphWidth]);
+
+            let outputExtent = d3.extent(this_data, d => d.output)
+            let outputScale = d3.scaleLog().domain(outputExtent).range([graphHeight, 0]);
+            let leftAxis = d3.axisLeft(outputScale);
+            let leftGridlines = d3.axisLeft(outputScale).tickFormat('').tickSize(-graphWidth - 10);
+            annotations.append("g").attr("transform", `translate(${margins.left - 10},${margins.top})`).attr("class", "axis").call(leftAxis);
+            annotations.append('g').attr("transform", `translate(${margins.left - 10},${margins.top})`).attr('class', 'gridlines').call(leftGridlines);
+
+
+
+
+
+            let bottomAxis = d3.axisBottom();
+            let bottomAxisG = annotations.append('g').attr("transform", `translate(${margins.left},${margins.top + graphHeight + 10})`).attr("class", "axis");
+            let employScale = d3.scaleSqrt()
+                .domain(d3.extent(this_data, d => d.employment))
+                .range([10, 30])
+            let colorScale = d3.scaleOrdinal(d3.schemeCategory10);
+
+            const hoursExtent = d3.extent(data, d => d.hours)
+            const hoursScale = d3.scaleLog().domain(hoursExtent).range([0, graphWidth]);
+            // console.log(hoursScale);
+
+            bottomAxis.scale(hoursScale);
+            // console.log(bottomAxis);
+            bottomAxisG.transition().call(bottomAxis);
+
+
+            // const hoursLabel = graph.append('text')
+            //     .attr('text-anchor', 'end')
+            //     .attr('class', 'year')
+            //     .attr('x', width - margin.right)
+            //     .attr('y', -100)
+            //     .attr('fill', 'black')
+            //     .attr('font-weight', 'bold')
+            //     .attr('font-size', '12px')
+            //     .text("Hours");
+
+            // const outputLabel = graph.append('text')
+            //     .attr('class', 'year')
+            //     .attr('transform', `translate(20, ${margin.top}) rotate(-90)`)
+            //     .attr('text-anchor', 'end')
+            //     .attr('fill', '#black')
+            //     .attr('font-weight', 'bold')
+            //     .attr('font-size', '12px')
+            //     .text("Output");
             // const yearLabel = graph.append('text')
             //     .attr('class', 'year')
             //     .attr('x', 40)
@@ -406,17 +417,179 @@
             //     .attr('font-family', 'Helvetica Neue, Arial')
             //     .attr('font-weight', 500)
             //     .attr('font-size', 80)
-            //     .text(selected_year);
-        });
+            //     .text(sl_year);
 
 
-        getData(2007);
-    })
+            // populate the axis
 
-</script>
 
-<body>
 
-</body>
+            // populate gridlines
+            // let bottomGridlines = d3.axisBottom(hoursScale).tickFormat('').tickSize(-graphHeight - 10);
+
+            // create 5 g elements    
+            // annotations.append('g').attr("transform", `translate(${margins.left},${graphHeight + margins.top + 10})`).attr('class', 'gridlines');
+            // let chartArea = graph.append('g').attr("transform", `translate(${margins.left},${margins.top})`).attr("class", "chart");
+
+            let state_region_mapping = {
+                'Washington': 'West',
+                'Oregon': 'West',
+                'California': 'West',
+                'Nevada': 'West',
+                'Idaho': 'West',
+                'Montana': 'West',
+                'Wyoming': 'West',
+                'Utah': 'West',
+                'Colorado': 'West',
+                'Alaska': 'West',
+                'Hawaii': 'West',
+                'Maine': 'Northeast',
+                'Vermont': 'Northeast',
+                'New York': 'Northeast',
+                'New Hampshire': 'Northeast',
+                'Massachusetts': 'Northeast',
+                'Rhode Island': 'Northeast',
+                'Connecticut': 'Northeast',
+                'New Jersey': 'Northeast',
+                'Pennsylvania': 'Northeast',
+                'North Dakota': 'Midwest',
+                'South Dakota': 'Midwest',
+                'Nebraska': 'Midwest',
+                'Kansas': 'Midwest',
+                'Minnesota': 'Midwest',
+                'Iowa': 'Midwest',
+                'Missouri': 'Midwest',
+                'Wisconsin': 'Midwest',
+                'Illinois': 'Midwest',
+                'Michigan': 'Midwest',
+                'Indiana': 'Midwest',
+                'Ohio': 'Midwest',
+                'West Virginia': 'South',
+                'District of Columbia': 'South',
+                'Maryland': 'South',
+                'Virginia': 'South',
+                'Kentucky': 'South',
+                'Tennessee': 'South',
+                'North Carolina': 'South',
+                'Mississippi': 'South',
+                'Arkansas': 'South',
+                'Louisiana': 'South',
+                'Alabama': 'South',
+                'Georgia': 'South',
+                'South Carolina': 'South',
+                'Florida': 'South',
+                'Delaware': 'South',
+                'Arizona': 'Southwest',
+                'New Mexico': 'Southwest',
+                'Oklahoma': 'Southwest',
+                'Texas': 'Southwest'
+            };
+            let regions = ['South', 'Southwest', 'West', 'Midwest', 'Northeast'];
+
+            // chartArea.selectAll("circle").data(dataInitial).join("circle")
+            //     .attr("fill", d => colorScale(state_region_mapping[d.state]))
+            //     .attr("cx", d => hoursScale(d.hours))
+            //     .attr("cy", d => outputScale(d.output))
+            //     .attr("r", d => employScale(d.employment))
+            //     .attr("opacity", 0.8);
+
+            // getData(2007);
+
+            function getData(sl_year) {
+                // let table = d3.select('#table');
+                sl_year = parseInt(sl_year);
+                dataInitial = data.filter(d => d.year === sl_year);
+                // console.log(dataInitial)
+
+
+                const hoursLabel = graph.append('text')
+                    .attr('text-anchor', 'end')
+                    .attr('class', 'year')
+                    .attr('x', width - margin.right)
+                    .attr('y', -100)
+                    .attr('fill', 'black')
+                    .attr('font-weight', 'bold')
+                    .attr('font-size', '12px')
+                    .text("Hours");
+
+                const outputLabel = graph.append('text')
+                    .attr('class', 'year')
+                    .attr('transform', `translate(20, ${margin.top}) rotate(-90)`)
+                    .attr('text-anchor', 'end')
+                    .attr('fill', '#black')
+                    .attr('font-weight', 'bold')
+                    .attr('font-size', '12px')
+                    .text("Output");
+
+
+                chartArea.selectAll("circle")
+                    .data(dataInitial)
+                    .join(
+                        enter => enter.append("circle")
+                        .attr("fill", d => colorScale(state_region_mapping[d.state]))
+                        .attr("cx", d => hoursScale(d.hours))
+                        .attr("cy", d => outputScale(d.output))
+                        .attr("r", d => employScale(d.employment))
+                        .attr("opacity", 0.8)
+                        .call(enter => enter.transition().attr("opacity", 0.8)),
+                        update => update.call(update => update.transition()
+                            .attr("fill", d => colorScale(state_region_mapping[d.state]))
+                            .attr("cx", d => hoursScale(d.hours))
+                            .attr("cy", d => outputScale(d.output))
+                            .attr("r", d => employScale(d.employment))),
+                        // .call( update => update.transition().duration(100)),
+                        exit => exit.call(exit => exit.transition().attr('opacity', 0).remove())
+                        // exit => exit
+                    );
+            }
+            let curr_year = 2007;
+            let table = d3.select('#table');
+            d3.select("#slider").on("input", function(event) {
+                let selected_year = event.target.value;
+                // console.log(selected_year);
+                // graph.selectAll('*').remove();
+                getData(selected_year);
+                requestData_map(selected_year);
+                table.selectAll('*').remove();
+                requestData_table(selected_year,"all");
+                curr_year = selected_year;
+
+                // const yearLabel = graph.append('text')
+                //     .attr('class', 'year')
+                //     .attr('x', 40)
+                //     .attr('y', height - margin.bottom - 600)
+                //     .attr('fill', '#ccc')
+                //     .attr('font-family', 'Helvetica Neue, Arial')
+                //     .attr('font-weight', 500)
+                //     .attr('font-size', 80)
+                //     .text(selected_year);
+            });
+
+            d3.select("button#back").on("click", function(event) {
+                if (curr_year != 2007) {
+                    curr_year -= 1;
+                }
+                d3.select('#slider').property("value", curr_year);
+                getData(curr_year);
+                requestData_map(curr_year);
+            });
+            d3.select("button#forward").on("click", function(event) {
+                if (curr_year != 2021) {
+                    curr_year += 1;
+                }
+                d3.select('#slider').property("value", curr_year);
+                getData(curr_year);
+                requestData_map(curr_year);
+            })
+
+
+            getData(2007);
+        })
+    </script>
+    </div>
+
+    <body>
+
+    </body>
 
 </html>
