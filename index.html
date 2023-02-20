@@ -185,30 +185,13 @@
             let payScale = d3.scaleQuantile()
                 .domain(d3.extent(data, d => d.pay))
                 .range(["#D3D3D3", "#d1e8ed", "#adc2da", "#8879b3", "#762b80"]);
-            // let statePaths = map.selectAll("path.state").data(states.features)
-            //     .join("path")
-            //     .attr("class", "state")
-            //     .attr("note", d => d.state)
-            //     .attr("d", path)
-            //     .style("fill", d => compScale(d.pay))
-            //     .style("stroke", "none");
+
             let stateIdCounts = {}
             data.forEach(row => {
 
                 stateIdCounts[fips_codes[abbv[row.state]]] = row.pay;
             });
-            /*
-            let statesPath = map.selectAll("path.state")
-                .data(states.features)
-                .join("path")
-                .attr("d", path)
-                .attr("class", "state")
-                .style("fill", d => {
-                    let color = payScale(
-                        stateIdCounts[d.id]);
-                    return color;
-                }).style("stroke", "none");
-            */
+
             let statesPath = map.selectAll("path.state")
                 .data(states.features)
                 .join(
@@ -227,6 +210,30 @@
             // map.selectAll("state").style("fill", d => colorScale(d.properties.percent_artists))
 
 
+            function getKeyByValue(object, value) {
+                return Object.keys(object).find(key => object[key] === value);
+            }
+
+            // let haha = {'a':3,'b':4};
+            // console.log(getKeyByValue(haha,4));
+
+
+
+            let table = d3.select('#table');
+            map.selectAll(".state").on("click",clicked);
+            
+
+            function clicked(event, d){
+                // console.log(typeof event.target.__data__.id.toString());
+                let this_state_code = event.target.__data__.id
+                this_state_code = this_state_code < 10 ? ('0' + this_state_code).toString() : this_state_code.toString();
+                let this_abbr = getKeyByValue(state_codes, this_state_code);
+                let this_state = getKeyByValue(us_state_to_abbrev, this_abbr);
+                table.selectAll('*').remove();
+                requestData_table(sl_year,this_state);
+            }
+
+
         }
         requestData_map(2007);
     </script>
@@ -237,28 +244,40 @@
     </div>
     <script>
 
-        const requestData_table = async function(sl_year) {
+        const requestData_table = async function(sl_year, states) {
             let table = d3.select('#table');
             let data = await d3.csv("processed_df.csv", d3.autoType);
             data = data.filter(d => d.year === parseInt(sl_year));
+            console.log(data);
 
-            let pay = 0;
-            let hours = 0;
-            let output = 0;
-            let employment = 0;
-            for (let i = 0; i < data.length; i++){
-                pay += data[i].pay;
-                hours += data[i].hours;
-                output += data[i].output;
-                employment += data[i].employment;
+            let table_data;
+            if (states == "all"){
+                let pay = 0;
+                let hours = 0;
+                let output = 0;
+                let employment = 0;
+                for (let i = 0; i < data.length; i++){
+                    pay += data[i].pay;
+                    hours += data[i].hours;
+                    output += data[i].output;
+                    employment += data[i].employment;
+                }
+
+                table_data = [
+                { "type" : 'Pay', "data" : pay.toFixed(2) },
+                { "type" : 'Hours', "data" : hours.toFixed(2) },
+                { "type" : 'Output', "data" : output.toFixed(2) },
+                { "type" : 'Employment', "data" : employment.toFixed(2) }];
+            }else{
+                this_state = data.filter(d => d.state === states);
+                console.log(this_state);
+                table_data = [
+                { "type" : 'Pay', "data" : this_state[0]['pay'].toFixed(2) },
+                { "type" : 'Hours', "data" : this_state[0]['hours'].toFixed(2) },
+                { "type" : 'Output', "data" : this_state[0]['output'].toFixed(2) },
+                { "type" : 'Employment', "data" : this_state[0]['employment'].toFixed(2) }];
             }
-
-            let table_data = [
-            { "type" : 'Pay', "data" : pay.toFixed(2) },
-            { "type" : 'Hours', "data" : hours.toFixed(2) },
-            { "type" : 'Output', "data" : output.toFixed(2) },
-            { "type" : 'Employment', "data" : employment.toFixed(2) }];
-            console.log(table_data);
+            
                     
         function tabulate(data, columns) {
                 var table = d3.select('#table');
@@ -295,31 +314,8 @@
             // render the tables
             tabulate(table_data, ['type', 'data']); // 2 column table
         }
-        requestData_table(2007);
+        requestData_table(2007, "all");
         
-            // tabulate(data, ['type']); // table with only date column
-            // tabulate(data, ['data']); // table with only close column
-        
-        // const requestData_table = async function(sl_year, id_name) {
-        //     let data = await d3.csv("processed_df.csv", d3.autoType);
-        //     data = data.filter(d => d.year === parseInt(sl_year));
-
-        //     let pay = 0;
-        //     let hours = 0;
-        //     let output = 0;
-        //     let employment = 0;
-        //     for (let i = 0; i < data.length; i++){
-        //         pay += data[i].pay;
-        //         hours += data[i].hours;
-        //         output += data[i].output;
-        //         employment += data[i].employment;
-        //     }
-        //     console.log(pay);
-
-        //     let pay_element = ducoment.getElementById('pay').innerHTML = pay;
-        // }
-        // pay_element('pay',pay)
-        // requestData_table(2007);
     </script>
 
     <div class = "right">
@@ -500,7 +496,7 @@
             // getData(2007);
 
             function getData(sl_year) {
-                let table = d3.select('#table');
+                // let table = d3.select('#table');
                 sl_year = parseInt(sl_year);
                 dataInitial = data.filter(d => d.year === sl_year);
                 // console.log(dataInitial)
@@ -547,6 +543,7 @@
                     );
             }
             let curr_year = 2007;
+            let table = d3.select('#table');
             d3.select("#slider").on("input", function(event) {
                 let selected_year = event.target.value;
                 // console.log(selected_year);
