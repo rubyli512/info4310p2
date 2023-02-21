@@ -271,7 +271,7 @@
                 let this_state_code = event.target.id;
                 let this_abbr = getKeyByValue(state_codes, this_state_code);
                 let this_state = getKeyByValue(us_state_to_abbrev, this_abbr);
-                table.selectAll('tr').remove();
+                table.selectAll('*').remove();
 
                 if (parseInt(this_state_code) !== curr_state_selected_id) {
                     requestData_table(sl_year, this_state);
