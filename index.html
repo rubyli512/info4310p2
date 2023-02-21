@@ -309,11 +309,11 @@
         <div>
             <ul>
                 <li id="north">
-                    North 
+                    North
                 </li id="east">
                 <li>
                     East
-                </li >
+                </li>
                 <li id="south">
                     South
                 </li>
@@ -544,9 +544,10 @@
                         // exit => exit
                     );
                 console.log(text_year);
-                text_year.append("text").text(sl_year).attr("x", 100).style('font-size', '100').attr('text-anchor', 'end').attr("color","red");
+                // text_year.html("");
+                // text_year.append("text").text(sl_year).attr("x", 100).style('font-size', '100').attr('text-anchor', 'end').attr("color","red");
 
-
+                text_year.select("#year").text(sl_year);
             }
             let curr_year = 2007;
             let table = d3.select('#table');
@@ -562,8 +563,10 @@
                 requestData_table(selected_year, "all");
                 curr_year = parseInt(selected_year);
 
-                // text_year.selectAll('*').remove()
-                let print_text = text_year.append("text").text(selected_year).attr("x", 100).attr("y", 100).style("font", "20px Verdana").style("fill", "darkred").attr("class","year");
+                // text_year.html("");
+                // let print_text = text_year.append("text").text(selected_year).attr("x", 100).attr("y", 100).style("font", "100px").style("fill", "darkred").attr("class", "year");
+                let print_text = text_year.select("#year").text(selected_year);
+
                 // console.log(print_text);
                 // chartArea.selectAll("text.text_year")
                 //     .data(dataInitial)
@@ -583,8 +586,8 @@
                 //         // exit => exit
                 //     );
 
-                   // create a cell in each row for each column
-                   var cells = text_year.selectAll('text#year')
+                // create a cell in each row for each column
+                var cells = text_year.selectAll('text#year')
                     // .data(selected_year)
                     .join(
                         enter => enter.append('text')
@@ -633,8 +636,25 @@
     <div class="right">
 
         <table id="table">
+            <!-- <tr>
+                <td>Pay</td>
+                <td id="payVal"></td>
+            </tr>
+            <tr>
+                <td>Hours Worked</td>
+                <td id="hoursVal"></td>
+            </tr>
+            <tr>
+                <td>Average Output</td>
+                <td id="outputVal"></td>
+            </tr>
+            <tr>
+                <td>Total Employment</td>
+                <td id="employVal"></td>
+            </tr> -->
         </table>
         <div id="text_year">
+            <p id="year"></p>
         </div>
     </div>
     <script>
