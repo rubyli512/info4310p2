@@ -810,7 +810,7 @@
                 requestData_map(selected_year);
                 table.selectAll('*').remove();
                 requestData_table(selected_year, "all");
-                curr_year = selected_year;
+                curr_year = parseInt(selected_year);
 
                 // text_year.selectAll('*').remove()
                 let print_text = text_year.append("text").text(selected_year).attr("x", 100).attr("y", 100).style("font", "20px Verdana").style("fill", "darkred").attr("class", "year");
