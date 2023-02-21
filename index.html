@@ -636,7 +636,8 @@
     <div class="right">
 
         <table id="table">
-            <!-- <tr>
+            <th id="thead"></th>
+            <tr>
                 <td>Pay</td>
                 <td id="payVal"></td>
             </tr>
@@ -651,7 +652,7 @@
             <tr>
                 <td>Total Employment</td>
                 <td id="employVal"></td>
-            </tr> -->
+            </tr>
         </table>
         <div id="text_year">
             <p id="year"></p>
@@ -667,7 +668,7 @@
             let table_data;
             let title;
             if (states == "all") {
-                title = "All Data from " + sl_year;
+                title = "All States' Data from " + sl_year;
                 let pay = 0;
                 let hours = 0;
                 let output = 0;
@@ -713,10 +714,13 @@
 
 
             function tabulate(data, columns) {
-                var table = d3.select('#table');
-                // table.append('text').text(title);
-                var thead = table.append('thead');
-                var tbody = table.append('tbody');
+                // var table = d3.select('#table');
+                // // table.append('text').text(title);
+                // var thead = table.append('thead');
+                // var tbody = table.append('tbody');
+
+                let table = d3.select("table");
+                let thead = table.select("#year")
 
                 thead.append('text').text(title).attr('font-size', '10').attr('text-anchor', 'end');
                 // append the header rows
