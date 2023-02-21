@@ -31,13 +31,14 @@
         flex-direction: row;
     }
     
-    .right {
+    .middle {
         display: flex;
         flex-direction: column;
     }
 </style>
 <div class="main">
-    <svg id="map" height="500" width="500"></svg>
+    <div id = 'chloropleth'>
+        <svg id="map" height="500" width="500"></svg>
 
     <script>
         const svg = d3.select("#map");
@@ -214,11 +215,6 @@
                 return Object.keys(object).find(key => object[key] === value);
             }
 
-            // let haha = {'a':3,'b':4};
-            // console.log(getKeyByValue(haha,4));
-
-
-
             let table = d3.select('#table');
 
             map.selectAll(".state").on("click", clicked_map);
@@ -259,6 +255,7 @@
                     map.selectAll(".state").transition().duration(200).style("opacity", d => 1);
                     graph.selectAll("circle").transition().duration(200).style("opacity", d => 1);
                     curr_state_selected_id = "";
+                    requestData_table(sl_year,"all");
                 }
 
 
@@ -303,112 +300,10 @@
         }
         requestData_map(2007);
     </script>
+    </div>
+
 
     <div class="middle">
-
-        <table id="table">
-        </table>
-        <p id="year_text">
-        </p>
-    </div>
-    <script>
-        const requestData_table = async function(sl_year, states) {
-            let table = d3.select('#table');
-            let data = await d3.csv("processed_df.csv", d3.autoType);
-            data = data.filter(d => d.year === parseInt(sl_year));
-            // console.log(data);
-
-            let table_data;
-            if (states == "all") {
-                let pay = 0;
-                let hours = 0;
-                let output = 0;
-                let employment = 0;
-                for (let i = 0; i < data.length; i++) {
-                    pay += data[i].pay;
-                    hours += data[i].hours;
-                    output += data[i].output;
-                    employment += data[i].employment;
-                }
-
-                table_data = [{
-                    "type": 'Pay',
-                    "data": pay.toFixed(2)
-                }, {
-                    "type": 'Hours',
-                    "data": hours.toFixed(2)
-                }, {
-                    "type": 'Output',
-                    "data": output.toFixed(2)
-                }, {
-                    "type": 'Employment',
-                    "data": employment.toFixed(2)
-                }];
-            } else {
-                this_state = data.filter(d => d.state === states);
-                // console.log(this_state);
-                table_data = [{
-                    "type": 'Pay',
-                    "data": this_state[0]['pay'].toFixed(2)
-                }, {
-                    "type": 'Hours',
-                    "data": this_state[0]['hours'].toFixed(2)
-                }, {
-                    "type": 'Output',
-                    "data": this_state[0]['output'].toFixed(2)
-                }, {
-                    "type": 'Employment',
-                    "data": this_state[0]['employment'].toFixed(2)
-                }];
-            }
-
-
-            function tabulate(data, columns) {
-                var table = d3.select('#table');
-                var thead = table.append('thead');
-                var tbody = table.append('tbody');
-
-                // append the header row
-                thead.append('tr')
-                    .selectAll('th')
-                    .data(columns).enter()
-                    .append('th')
-                    .text(function(column) {
-                        return column;
-                    });
-
-                // create a row for each object in the data
-                var rows = tbody.selectAll('tr')
-                    .data(data)
-                    .enter()
-                    .append('tr');
-
-                // create a cell in each row for each column
-                var cells = rows.selectAll('td')
-                    .data(function(row) {
-                        return columns.map(function(column) {
-                            return {
-                                column: column,
-                                value: row[column]
-                            };
-                        });
-                    })
-                    .enter()
-                    .append('td')
-                    .text(function(d) {
-                        return d.value;
-                    });
-
-                return table;
-            }
-
-            // render the tables
-            tabulate(table_data, ['type', 'data']); // 2 column table
-        }
-        requestData_table(2007, "all");
-    </script>
-
-    <div class="right">
         <svg id="graph" width="500 " height="500" style="margin: 20px"></svg>
         <input id="slider" type="range" min="2007" max="2021" value="2007" step="1" />
         <div class="buttons">
@@ -439,20 +334,8 @@
 
         d3.csv("processed_df.csv", d3.autoType).then((data) => {
 
-            // sl_year = 2007;
-
-            // const data = await d3.csv("processed_df.csv", d3.autoType);
-
-            // console.log(data);
-            // years = d3.extent(data, d => d.year)
-            // sl_year = parseInt(sl_year);
-            // dataInitial = data.filter(d => d.year === sl_year)
-            // console.log(dataInitial);
             const this_data = data.filter(d => d.year === 2007)
 
-            // create 3 scales
-            // let hoursExtent = d3.extent(dataInitial, d => d.hours)
-            // let hoursScale = d3.scaleLog().domain(hoursExtent).range([0, graphWidth]);
 
             let outputExtent = d3.extent(this_data, d => d.output)
             let outputScale = d3.scaleLog().domain(outputExtent).range([graphHeight, 0]);
@@ -697,6 +580,8 @@
                 d3.select('#slider').property("value", curr_year);
                 getData(curr_year);
                 requestData_map(curr_year);
+                table.selectAll('*').remove();
+                requestData_table(curr_year,"all");
             });
             d3.select("button#forward").on("click", function(event) {
                 if (curr_year != 2021) {
@@ -705,13 +590,147 @@
                 d3.select('#slider').property("value", curr_year);
                 getData(curr_year);
                 requestData_map(curr_year);
+                table.selectAll('*').remove();
+                requestData_table(curr_year,"all");
             })
 
             // let selected_state_code = -1;
             getData(2007);
         })
     </script>
+
+<div class="right">
+
+    <table id="table">
+    </table>
+    <p id="year_text">
+    </p>
 </div>
+<script>
+    const requestData_table = async function(sl_year, states) {
+        let table = d3.select('#table');
+        let data = await d3.csv("processed_df.csv", d3.autoType);
+        data = data.filter(d => d.year === parseInt(sl_year));
+        // console.log(data);
+
+        let table_data;
+        let title;
+        if (states == "all") {
+            title = "All Data from " + sl_year;
+            let pay = 0;
+            let hours = 0;
+            let output = 0;
+            let employment = 0;
+            for (let i = 0; i < data.length; i++) {
+                pay += data[i].pay;
+                hours += data[i].hours;
+                output += data[i].output;
+                employment += data[i].employment;
+            }
+
+            table_data = [{
+                "type": 'Pay',
+                "data": pay.toFixed(2)
+            }, {
+                "type": 'Hours',
+                "data": hours.toFixed(2)
+            }, {
+                "type": 'Output',
+                "data": output.toFixed(2)
+            }, {
+                "type": 'Employment',
+                "data": employment.toFixed(2)
+            }];
+        } else {
+            title = "Data from " + states + " from " + sl_year;
+            this_state = data.filter(d => d.state === states);
+            // console.log(this_state);
+            table_data = [{
+                "type": 'Pay',
+                "data": this_state[0]['pay'].toFixed(2)
+            }, {
+                "type": 'Hours',
+                "data": this_state[0]['hours'].toFixed(2)
+            }, {
+                "type": 'Output',
+                "data": this_state[0]['output'].toFixed(2)
+            }, {
+                "type": 'Employment',
+                "data": this_state[0]['employment'].toFixed(2)
+            }];
+        }
+
+
+        function tabulate(data, columns) {
+            var table = d3.select('#table');
+            // table.append('text').text(title);
+            var thead = table.append('thead');
+            var tbody = table.append('tbody');
+
+            thead.append('text').text(title).attr('font-size','10').attr('text-anchor','end');
+            // append the header rows
+            thead.append('tr')
+                .selectAll('th')
+                .data(columns)
+                .join(
+                    enter => enter.append('th')
+                    .text(function(column){
+                        return column;
+                    })
+                    .call(enter => enter.transition().attr("opacity", 0.8)),
+                    update => update.call(update => update.transition()),
+                    exit => exit.call(exit => exit.transition().attr('opacity',0).remove())
+                )
+
+            // create a row for each object in the data
+            var rows = tbody.selectAll('tr')
+                .data(data)
+                .join(
+                    enter => enter.append('tr')
+                    .call(enter => enter.transition().attr("opacity", 0.8)),
+                    update => update.call(update => update.transition()),
+                    exit => exit.call(exit => exit.transition().attr('opacity',0).remove())
+                )
+                // .enter()
+                // .append('tr');
+
+            // create a cell in each row for each column
+            var cells = rows.selectAll('td')
+                .data(function(row) {
+                    return columns.map(function(column) {
+                        return {
+                            column: column,
+                            value: row[column]
+                        };
+                    });
+                })
+                .join(
+                    enter => enter.append('td')
+                    .text(function(d){
+                        return d.value;
+                    })
+                    .call(enter => enter.transition().attr("opacity", 0.8)),
+                    update => update.call(update => update.transition()
+                    .attr('fill','red')),
+                    exit => exit.call(exit => exit.transition().attr('opacity',0).remove())
+                )
+                // .enter()
+                // .append('td')
+                // .text(function(d) {
+                //     return d.value;
+                // });
+
+            return table;
+        }
+
+        // render the tables
+        tabulate(table_data, ['type', 'data']); // 2 column table
+    }
+    requestData_table(2007, "all");
+</script>
+</div>
+
+
 
 <body>
 
