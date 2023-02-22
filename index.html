@@ -35,6 +35,26 @@
         display: flex;
         flex-direction: column;
     }
+
+    #west {
+        color: rgb(225, 131, 0);
+    }
+
+    #south {
+        color: rgb(0, 119, 255);
+    }
+
+    #northeast {
+        color: red;
+    }
+
+    #southwest {
+        color: green;
+    }
+
+    #midwest {
+        color: rgb(118, 14, 187);
+    }
 </style>
 <div class="main">
     <div id='chloropleth'>
@@ -65,7 +85,7 @@
                 var path = d3.geoPath().projection(projection);
 
                 let data = await d3.csv("processed_df.csv", d3.autoType);
-                data = data.filter(d => d.year === parseInt(2007));
+                // data = data.filter(d => d.year === parseInt(2007));
 
                 // const data = d3.select("processed_df.csv");
                 let compExtent = d3.extent(data, d => d.pay);
@@ -223,6 +243,7 @@
 
                 const requestData_map = async function (sl_year) {
 
+
                     let abbv = us_state_to_abbrev = {
                         "Alabama": "AL",
                         "Alaska": "AK",
@@ -339,9 +360,6 @@
                     // load dataset
                     // let data = await d3.csv("processed_df.csv", d3.autoType);
                     data = data.filter(d => d.year === parseInt(sl_year));
-
-
-
 
 
                     let stateIdCounts = {}
@@ -470,17 +488,20 @@
         <input id="slider" type="range" min="2007" max="2021" value="2007" step="1" />
         <div>
             <ul>
-                <li id="north">
-                    North
-                </li id="east">
-                <li>
-                    East
+                <li id="northeast">
+                    Northeast
+                </li >
+                <li id="midwest">
+                    Midwest
                 </li>
                 <li id="south">
                     South
                 </li>
                 <li id='west'>
                     West
+                </li>
+                <li id='southwest'>
+                    Southwest
                 </li>
             </ul>
         </div>
