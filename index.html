@@ -11,84 +11,95 @@
     .gridlines line {
         stroke: rgb(223, 223, 223);
     }
-
+    
     .gridlines .domain {
         stroke: none;
     }
-
+    
     .state {
         fill: white;
     }
-
+    
     .outline {
         fill: none;
         stroke: gray;
         stroke-width: 1px;
     }
-
+    
     .main {
         display: flex;
         flex-direction: row;
     }
-
+    
     .middle {
         display: flex;
         flex-direction: column;
     }
-
+    
     #west {
         color: rgb(225, 131, 0);
     }
-
+    
     #south {
         color: rgb(0, 119, 255);
     }
-
+    
     #northeast {
         color: red;
     }
-
+    
     #southwest {
         color: green;
     }
-
+    
     #midwest {
         color: rgb(118, 14, 187);
     }
-    #year-content{
+    
+    #year-content {
         font-family: 'Helvetica Neue, Arial';
         font-weight: 500;
         font-size: 80;
         fill: '#ccc';
         text-align: center;
     }
-
-    #table{
+    
+    #table {
         font-family: 'Helvetica Neue, Arial';
         font-weight: 70;
         font-size: 20;
         fill: '#ccc';
         text-align: left;
     }
-
-    #table_title{
+    
+    #table_title {
         font-family: 'Helvetica Neue, Arial';
         font-weight: 70;
         font-size: 25;
         fill: '#ccc';
         text-align: center;
     }
-
-    .td{
+    
+    .td {
         margin: 50px;
     }
-
-    .right{
+    
+    .right {
         padding-top: 100px;
     }
-    
-
 </style>
+
+<div id='big-year'>
+    <p id='year-content'></p>
+</div>
+<script>
+    function updateTitle(sl_year) {
+        let big_title = d3.select("#big-year")
+        big_title.select("#year-content").text(sl_year);
+    }
+    updateTitle(2007);
+    // d3.select("#big-year").select("#year-content").text(year);
+</script>
 <div class="main">
     <div id='chloropleth'>
         <svg id="map" height="500" width="500"></svg>
@@ -109,8 +120,120 @@
             const mapHeight = height_map - margin.top - margin.bottom;
             const map = svg.append("g")
                 .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
-
-            const request_all_data = async function () {
+            const abbv = us_state_to_abbrev = {
+                "Alabama": "AL",
+                "Alaska": "AK",
+                "Arizona": "AZ",
+                "Arkansas": "AR",
+                "California": "CA",
+                "Colorado": "CO",
+                "Connecticut": "CT",
+                "Delaware": "DE",
+                "Florida": "FL",
+                "Georgia": "GA",
+                "Hawaii": "HI",
+                "Idaho": "ID",
+                "Illinois": "IL",
+                "Indiana": "IN",
+                "Iowa": "IA",
+                "Kansas": "KS",
+                "Kentucky": "KY",
+                "Louisiana": "LA",
+                "Maine": "ME",
+                "Maryland": "MD",
+                "Massachusetts": "MA",
+                "Michigan": "MI",
+                "Minnesota": "MN",
+                "Mississippi": "MS",
+                "Missouri": "MO",
+                "Montana": "MT",
+                "Nebraska": "NE",
+                "Nevada": "NV",
+                "New Hampshire": "NH",
+                "New Jersey": "NJ",
+                "New Mexico": "NM",
+                "New York": "NY",
+                "North Carolina": "NC",
+                "North Dakota": "ND",
+                "Ohio": "OH",
+                "Oklahoma": "OK",
+                "Oregon": "OR",
+                "Pennsylvania": "PA",
+                "Rhode Island": "RI",
+                "South Carolina": "SC",
+                "South Dakota": "SD",
+                "Tennessee": "TN",
+                "Texas": "TX",
+                "Utah": "UT",
+                "Vermont": "VT",
+                "Virginia": "VA",
+                "Washington": "WA",
+                "West Virginia": "WV",
+                "Wisconsin": "WI",
+                "Wyoming": "WY",
+                "District of Columbia": "DC",
+                "American Samoa": "AS",
+                "Guam": "GU",
+                "Northern Mariana Islands": "MP",
+                "Puerto Rico": "PR",
+                "United States Minor Outlying Islands": "UM",
+                "U.S. Virgin Islands": "VI",
+            };
+            const fips_codes = state_codes = {
+                'WA': '53',
+                'DE': '10',
+                'DC': '11',
+                'WI': '55',
+                'WV': '54',
+                'HI': '15',
+                'FL': '12',
+                'WY': '56',
+                'PR': '72',
+                'NJ': '34',
+                'NM': '35',
+                'TX': '48',
+                'LA': '22',
+                'NC': '37',
+                'ND': '38',
+                'NE': '31',
+                'TN': '47',
+                'NY': '36',
+                'PA': '42',
+                'AK': '02',
+                'NV': '32',
+                'NH': '33',
+                'VA': '51',
+                'CO': '08',
+                'CA': '06',
+                'AL': '01',
+                'AR': '05',
+                'VT': '50',
+                'IL': '17',
+                'GA': '13',
+                'IN': '18',
+                'IA': '19',
+                'MA': '25',
+                'AZ': '04',
+                'ID': '16',
+                'CT': '09',
+                'ME': '23',
+                'MD': '24',
+                'OK': '40',
+                'OH': '39',
+                'UT': '49',
+                'MO': '29',
+                'MN': '27',
+                'MI': '26',
+                'RI': '44',
+                'KS': '20',
+                'MT': '30',
+                'MS': '28',
+                'SC': '45',
+                'KY': '21',
+                'OR': '41',
+                'SD': '46'
+            };
+            const request_all_data = async function(sl_year) {
                 const us = await d3.json("us-smaller.json");
                 var states = topojson.feature(us, us.objects.states);
                 var statesMesh = topojson.mesh(us, us.objects.states);
@@ -125,7 +248,8 @@
                 let compScale = d3.scaleSequential(d3.interpolateViridis).domain(compExtent);
                 let payScale = d3.scaleQuantile()
                     .domain(d3.extent(data, d => d.pay))
-                    .range([d3.interpolateViridis(1), d3.interpolateViridis(0.7),d3.interpolateViridis(0.5), d3.interpolateViridis(0.3), d3.interpolateViridis(0.1)]);
+                    .range([d3.interpolateViridis(1), d3.interpolateViridis(0.7), d3.interpolateViridis(0.5), d3.interpolateViridis(0.3), d3.interpolateViridis(0.1)]);
+
 
                 // the below function drawLegend is written by Professor Rz from INFO 3300 Oct 3 Lecture 
                 function drawLegend(legendSelector, legendColorScale) {
@@ -157,7 +281,8 @@
                     // In this case the "data" are pixels, and we get numbers to use in colorScale
                     // Use this to make axis labels
                     let barScale = d3.scaleLinear().domain([legendMinMax[0] - minMaxExtension,
-                    legendMinMax[1] + minMaxExtension])
+                            legendMinMax[1] + minMaxExtension
+                        ])
                         .range([0, legendBarWidth]);
                     let barAxis = d3.axisBottom(barScale);
 
@@ -172,8 +297,11 @@
                     if (legendColorScale.hasOwnProperty('thresholds') || legendColorScale.hasOwnProperty('quantiles')) {
                         // Get the thresholds
                         let thresholds = [];
-                        if (legendColorScale.hasOwnProperty('thresholds')) { thresholds = legendColorScale.thresholds() }
-                        else { thresholds = legendColorScale.quantiles() }
+                        if (legendColorScale.hasOwnProperty('thresholds')) {
+                            thresholds = legendColorScale.thresholds()
+                        } else {
+                            thresholds = legendColorScale.quantiles()
+                        }
 
                         const barThresholds = [legendMinMax[0], ...thresholds, legendMinMax[1]];
 
@@ -197,15 +325,7 @@
                     }
                     // Else if we have a continuous / roundable scale
                     else if (legendColorScale.hasOwnProperty('rangeRound')) {
-                        // NOTE: The barAxis may round min and max values to make them pretty
-                        // ** This also means there is a risk of the legend going beyond scale bounds
-                        // We need to use the barAxis min and max just to be sure the bar is complete
-                        //    Using barAxis.scale().invert() goes from *axis* pixels to data values easily
-                        // ** We also need to create patches for the scale if the labels exceed bounds
-                        //     (floating point comparisons risky for small data ranges,but not a big deal
-                        //      because patches will be indistinguishable from actual scale bottom)
-                        // It's likely that scale clamping will actually do this for us elegantly
-                        // ...but better to be safer and patch the regions anyways
+
 
                         for (let i = 0; i < legendBarWidth; i = i + stepSize) {
 
@@ -274,122 +394,10 @@
 
                 drawLegend("#mapLegend", payScale);
 
-                const requestData_map = async function (sl_year) {
+                const requestData_map = async function(sl_year) {
 
 
-                    let abbv = us_state_to_abbrev = {
-                        "Alabama": "AL",
-                        "Alaska": "AK",
-                        "Arizona": "AZ",
-                        "Arkansas": "AR",
-                        "California": "CA",
-                        "Colorado": "CO",
-                        "Connecticut": "CT",
-                        "Delaware": "DE",
-                        "Florida": "FL",
-                        "Georgia": "GA",
-                        "Hawaii": "HI",
-                        "Idaho": "ID",
-                        "Illinois": "IL",
-                        "Indiana": "IN",
-                        "Iowa": "IA",
-                        "Kansas": "KS",
-                        "Kentucky": "KY",
-                        "Louisiana": "LA",
-                        "Maine": "ME",
-                        "Maryland": "MD",
-                        "Massachusetts": "MA",
-                        "Michigan": "MI",
-                        "Minnesota": "MN",
-                        "Mississippi": "MS",
-                        "Missouri": "MO",
-                        "Montana": "MT",
-                        "Nebraska": "NE",
-                        "Nevada": "NV",
-                        "New Hampshire": "NH",
-                        "New Jersey": "NJ",
-                        "New Mexico": "NM",
-                        "New York": "NY",
-                        "North Carolina": "NC",
-                        "North Dakota": "ND",
-                        "Ohio": "OH",
-                        "Oklahoma": "OK",
-                        "Oregon": "OR",
-                        "Pennsylvania": "PA",
-                        "Rhode Island": "RI",
-                        "South Carolina": "SC",
-                        "South Dakota": "SD",
-                        "Tennessee": "TN",
-                        "Texas": "TX",
-                        "Utah": "UT",
-                        "Vermont": "VT",
-                        "Virginia": "VA",
-                        "Washington": "WA",
-                        "West Virginia": "WV",
-                        "Wisconsin": "WI",
-                        "Wyoming": "WY",
-                        "District of Columbia": "DC",
-                        "American Samoa": "AS",
-                        "Guam": "GU",
-                        "Northern Mariana Islands": "MP",
-                        "Puerto Rico": "PR",
-                        "United States Minor Outlying Islands": "UM",
-                        "U.S. Virgin Islands": "VI",
-                    };
-                    let fips_codes = state_codes = {
-                        'WA': '53',
-                        'DE': '10',
-                        'DC': '11',
-                        'WI': '55',
-                        'WV': '54',
-                        'HI': '15',
-                        'FL': '12',
-                        'WY': '56',
-                        'PR': '72',
-                        'NJ': '34',
-                        'NM': '35',
-                        'TX': '48',
-                        'LA': '22',
-                        'NC': '37',
-                        'ND': '38',
-                        'NE': '31',
-                        'TN': '47',
-                        'NY': '36',
-                        'PA': '42',
-                        'AK': '02',
-                        'NV': '32',
-                        'NH': '33',
-                        'VA': '51',
-                        'CO': '08',
-                        'CA': '06',
-                        'AL': '01',
-                        'AR': '05',
-                        'VT': '50',
-                        'IL': '17',
-                        'GA': '13',
-                        'IN': '18',
-                        'IA': '19',
-                        'MA': '25',
-                        'AZ': '04',
-                        'ID': '16',
-                        'CT': '09',
-                        'ME': '23',
-                        'MD': '24',
-                        'OK': '40',
-                        'OH': '39',
-                        'UT': '49',
-                        'MO': '29',
-                        'MN': '27',
-                        'MI': '26',
-                        'RI': '44',
-                        'KS': '20',
-                        'MT': '30',
-                        'MS': '28',
-                        'SC': '45',
-                        'KY': '21',
-                        'OR': '41',
-                        'SD': '46'
-                    };
+
                     // load dataset
                     // let data = await d3.csv("processed_df.csv", d3.autoType);
                     data = data.filter(d => d.year === parseInt(sl_year));
@@ -405,9 +413,9 @@
                         .data(states.features)
                         .join(
                             enter => enter.append("path").attr("d", path)
-                                .attr("class", "state")
-                                .style("fill", d => payScale(
-                                    stateIdCounts[d.id])).call(enter => enter.transition().attr("opacity", 1)),
+                            .attr("class", "state")
+                            .style("fill", d => payScale(
+                                stateIdCounts[d.id])).call(enter => enter.transition().attr("opacity", 1)),
                             update => update.call(update => update.transition().style("fill", d => payScale(
                                 stateIdCounts[d.id]))),
                             exit => exit.call(exit => exit.transition().attr('opacity', 0).remove())
@@ -437,7 +445,8 @@
                         let this_abbr = getKeyByValue(state_codes, this_state_code);
                         let this_state = getKeyByValue(us_state_to_abbrev, this_abbr);
                         // Remove the previous table
-                        table.selectAll('*').remove();
+                        // table.selectAll('*').remove();
+                        requestData_table(sl_year, "all");
                         //Check whether the same state is selected
                         if (parseInt(this_state_code) !== curr_state_selected_id) {
                             // If not so, move to a new state
@@ -477,7 +486,8 @@
                         let this_state_code = event.target.id;
                         let this_abbr = getKeyByValue(state_codes, this_state_code);
                         let this_state = getKeyByValue(us_state_to_abbrev, this_abbr);
-                        table.selectAll('*').remove();
+                        // table.selectAll('*').remove();
+                        requestData_table(sl_year, "all");
 
                         if (parseInt(this_state_code) !== curr_state_selected_id) {
                             requestData_table(sl_year, this_state);
@@ -500,6 +510,7 @@
                             map.selectAll(".state").transition().duration(200).style("opacity", 1);
                             graph.selectAll("circle").transition().duration(200).style("opacity", 1);
                             curr_state_selected_id = '';
+                            requestData_table(sl_year, "all");
                         }
 
 
@@ -507,11 +518,10 @@
 
 
                 }
-                requestData_map(2007);
+                requestData_map(sl_year);
 
             }
-            request_all_data();
-
+            request_all_data(2007);
         </script>
     </div>
 
@@ -523,7 +533,7 @@
             <ul>
                 <li id="northeast">
                     Northeast
-                </li >
+                </li>
                 <li id="midwest">
                     Midwest
                 </li>
@@ -591,47 +601,6 @@
             // console.log(bottomAxis);
             bottomAxisG.transition().call(bottomAxis);
 
-
-            // const hoursLabel = graph.append('text')
-            //     .attr('text-anchor', 'end')
-            //     .attr('class', 'year')
-            //     .attr('x', width - margin.right)
-            //     .attr('y', -100)
-            //     .attr('fill', 'black')
-            //     .attr('font-weight', 'bold')
-            //     .attr('font-size', '12px')
-            //     .text("Hours");
-
-            // const outputLabel = graph.append('text')
-            //     .attr('class', 'year')
-            //     .attr('transform', `translate(20, ${margin.top}) rotate(-90)`)
-            //     .attr('text-anchor', 'end')
-            //     .attr('fill', '#black')
-            //     .attr('font-weight', 'bold')
-            //     .attr('font-size', '12px')
-            //     .text("Output");
-            // const yearLabel = graph.append('text')
-            //     .attr('class', 'year')
-            //     .attr('x', 40)
-            //     .attr('y', height - margin.bottom - 600)
-            //     .attr('fill', '#ccc')
-            //     .attr('font-family', 'Helvetica Neue, Arial')
-            //     .attr('font-weight', 500)
-            //     .attr('font-size', 80)
-            //     .text(sl_year);
-
-
-            // populate the axis
-
-
-
-            // populate gridlines
-            // let bottomGridlines = d3.axisBottom(hoursScale).tickFormat('').tickSize(-graphHeight - 10);
-
-            // create 5 g elements    
-            // annotations.append('g').attr("transform", `translate(${margins.left},${graphHeight + margins.top + 10})`).attr('class', 'gridlines');
-            // let chartArea = graph.append('g').attr("transform", `translate(${margins.left},${margins.top})`).attr("class", "chart");
-
             let state_region_mapping = {
                 'Washington': 'West',
                 'Oregon': 'West',
@@ -686,6 +655,60 @@
                 'Texas': 'Southwest'
             };
             let regions = ['South', 'Southwest', 'West', 'Midwest', 'Northeast'];
+            let state_codes = {
+                'WA': '53',
+                'DE': '10',
+                'DC': '11',
+                'WI': '55',
+                'WV': '54',
+                'HI': '15',
+                'FL': '12',
+                'WY': '56',
+                'PR': '72',
+                'NJ': '34',
+                'NM': '35',
+                'TX': '48',
+                'LA': '22',
+                'NC': '37',
+                'ND': '38',
+                'NE': '31',
+                'TN': '47',
+                'NY': '36',
+                'PA': '42',
+                'AK': '02',
+                'NV': '32',
+                'NH': '33',
+                'VA': '51',
+                'CO': '08',
+                'CA': '06',
+                'AL': '01',
+                'AR': '05',
+                'VT': '50',
+                'IL': '17',
+                'GA': '13',
+                'IN': '18',
+                'IA': '19',
+                'MA': '25',
+                'AZ': '04',
+                'ID': '16',
+                'CT': '09',
+                'ME': '23',
+                'MD': '24',
+                'OK': '40',
+                'OH': '39',
+                'UT': '49',
+                'MO': '29',
+                'MN': '27',
+                'MI': '26',
+                'RI': '44',
+                'KS': '20',
+                'MT': '30',
+                'MS': '28',
+                'SC': '45',
+                'KY': '21',
+                'OR': '41',
+                'SD': '46'
+            };
 
             // chartArea.selectAll("circle").data(dataInitial).join("circle")
             //     .attr("fill", d => colorScale(state_region_mapping[d.state]))
@@ -730,21 +753,22 @@
                     .data(dataInitial)
                     .join(
                         enter => enter.append("circle")
-                            .attr("fill", d => colorScale(state_region_mapping[d.state]))
-                            .attr("cx", d => hoursScale(d.hours))
-                            .attr("cy", d => outputScale(d.output))
-                            .attr("r", d => employScale(d.employment))
-                            .attr("id", d =>
-                                state_codes[us_state_to_abbrev[d.state]]
-                            )
-                            .attr("opacity", 0.8)
-                            .call(enter => enter.transition().attr("opacity", 0.8)),
+                        .attr("fill", d => colorScale(state_region_mapping[d.state]))
+                        .attr("cx", d => hoursScale(d.hours))
+                        .attr("cy", d => outputScale(d.output))
+                        .attr("r", d => employScale(d.employment))
+                        .attr("id", d => state_codes[us_state_to_abbrev[d.state]]
+
+
+                        )
+                        .attr("opacity", 0.8)
+                        .call(enter => enter.transition().attr("opacity", 0.8)),
                         update => update.call(update => update.transition()
                             .attr("fill", d => colorScale(state_region_mapping[d.state]))
                             .attr("cx", d => hoursScale(d.hours))
                             .attr("cy", d => outputScale(d.output))
                             .attr("r", d => employScale(d.employment)))
-                            .attr("id", d => state_codes[us_state_to_abbrev[d.state]])
+                        .attr("id", d => state_codes[us_state_to_abbrev[d.state]])
                         /*
                         .attr("opacity", d => {
                             if (selecetd_state_code != -1 && state_codes[us_state_to_abbrev[d.state]] !== selected_state_code) {
@@ -768,36 +792,38 @@
             let table = d3.select('#table');
 
 
-            d3.select("#slider").on("input", function (event) {
+            d3.select("#slider").on("input", function(event) {
                 let selected_year = event.target.value;
                 // console.log(selected_year);
                 // graph.selectAll('*').remove();
                 getData(selected_year);
-                requestData_map(selected_year);
+                // requestData_map(selected_year);
+                request_all_data(selected_year);
                 // table.selectAll('*').remove();
                 requestData_table(selected_year, "all");
                 updateTitle(selected_year);
                 curr_year = parseInt(selected_year);
             });
 
-            d3.select("button#back").on("click", function (event) {
+            d3.select("button#back").on("click", function(event) {
                 if (curr_year != 2007) {
                     curr_year -= 1;
                 }
                 d3.select('#slider').property("value", curr_year);
                 getData(curr_year);
-                requestData_map(curr_year);
+                request_all_data(curr_year);
                 updateTitle(curr_year);
                 // table.selectAll('*').remove();
                 requestData_table(curr_year, "all");
             });
-            d3.select("button#forward").on("click", function (event) {
+            d3.select("button#forward").on("click", function(event) {
                 if (curr_year != 2021) {
                     curr_year += 1;
                 }
                 d3.select('#slider').property("value", curr_year);
                 getData(curr_year);
-                requestData_map(curr_year);
+                request_all_data(curr_year);
+                // requestData_map(curr_year);
                 updateTitle(curr_year);
                 // table.selectAll('*').remove();
                 requestData_table(curr_year, "all");
@@ -827,7 +853,7 @@
             </tr>
             <tr>
                 <td id="outputVal">
-                    <p id ="this_outputVal" ></p>
+                    <p id="this_outputVal"></p>
                 </td>
             </tr>
             <tr>
@@ -838,7 +864,7 @@
         </table>
     </div>
     <script>
-        const requestData_table = async function (sl_year, states) {
+        const requestData_table = async function(sl_year, states) {
             let table = d3.select('#table');
             let data = await d3.csv("processed_df.csv", d3.autoType);
             data = data.filter(d => d.year === parseInt(sl_year));
@@ -852,12 +878,16 @@
             let employment = 0;
             if (states == "all") {
                 title = "U.S. Data from " + sl_year;
+                let total_length = 0;
                 for (let i = 0; i < data.length; i++) {
                     pay += data[i].pay;
                     hours += data[i].avg_hours;
                     output += data[i].output;
                     employment += data[i].employment;
+                    total_length += 1;
                 }
+                pay /= total_length;
+                hours /= total_length;
 
                 ;
             } else {
@@ -872,7 +902,7 @@
 
 
 
-            let text_title =  d3.select("#table_title");
+            let text_title = d3.select("#table_title");
             text_title.select("#table_title_content").text(title);
 
             let text_pay = d3.select("#payVal");
@@ -888,9 +918,6 @@
 
             text_employ.select("#this_employmentVal").text("Total employment:     " + employment.toFixed(2) + '   Thousands of People');
 
-
-            // render the tables
-            // tabulate(table_data, ['type', 'data']); // 2 column table
         }
         requestData_table(2007, "all");
     </script>
@@ -903,4 +930,5 @@
 </body>
 
 </html>
+
 </html>
