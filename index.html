@@ -11,51 +11,55 @@
     .gridlines line {
         stroke: rgb(223, 223, 223);
     }
-    
+
     .gridlines .domain {
         stroke: none;
     }
-    
+
     .state {
         fill: white;
     }
-    
+
     .outline {
         fill: none;
         stroke: gray;
         stroke-width: 1px;
     }
-    
+
     .main {
         display: flex;
         flex-direction: row;
     }
-    
+
     .middle {
         display: flex;
         flex-direction: column;
     }
-    
+
+    ul {
+        list-style: none;
+    }
+
     #west {
         color: rgb(225, 131, 0);
     }
-    
+
     #south {
         color: rgb(0, 119, 255);
     }
-    
+
     #northeast {
         color: red;
     }
-    
+
     #southwest {
         color: green;
     }
-    
+
     #midwest {
         color: rgb(118, 14, 187);
     }
-    
+
     #year-content {
         font-family: 'Helvetica Neue, Arial';
         font-weight: 500;
@@ -63,7 +67,7 @@
         fill: '#ccc';
         text-align: center;
     }
-    
+
     #table {
         font-family: 'Helvetica Neue, Arial';
         font-weight: 70;
@@ -71,7 +75,7 @@
         fill: '#ccc';
         text-align: left;
     }
-    
+
     #table_title {
         font-family: 'Helvetica Neue, Arial';
         font-weight: 70;
@@ -79,11 +83,11 @@
         fill: '#ccc';
         text-align: center;
     }
-    
+
     .td {
         margin: 50px;
     }
-    
+
     .right {
         padding-top: 100px;
     }
@@ -233,7 +237,7 @@
                 'OR': '41',
                 'SD': '46'
             };
-            const request_all_data = async function(sl_year) {
+            const request_all_data = async function (sl_year) {
                 const us = await d3.json("us-smaller.json");
                 var states = topojson.feature(us, us.objects.states);
                 var statesMesh = topojson.mesh(us, us.objects.states);
@@ -281,8 +285,8 @@
                     // In this case the "data" are pixels, and we get numbers to use in colorScale
                     // Use this to make axis labels
                     let barScale = d3.scaleLinear().domain([legendMinMax[0] - minMaxExtension,
-                            legendMinMax[1] + minMaxExtension
-                        ])
+                    legendMinMax[1] + minMaxExtension
+                    ])
                         .range([0, legendBarWidth]);
                     let barAxis = d3.axisBottom(barScale);
 
@@ -394,7 +398,7 @@
 
                 drawLegend("#mapLegend", payScale);
 
-                const requestData_map = async function(sl_year) {
+                const requestData_map = async function (sl_year) {
 
 
 
@@ -413,9 +417,9 @@
                         .data(states.features)
                         .join(
                             enter => enter.append("path").attr("d", path)
-                            .attr("class", "state")
-                            .style("fill", d => payScale(
-                                stateIdCounts[d.id])).call(enter => enter.transition().attr("opacity", 1)),
+                                .attr("class", "state")
+                                .style("fill", d => payScale(
+                                    stateIdCounts[d.id])).call(enter => enter.transition().attr("opacity", 1)),
                             update => update.call(update => update.transition().style("fill", d => payScale(
                                 stateIdCounts[d.id]))),
                             exit => exit.call(exit => exit.transition().attr('opacity', 0).remove())
@@ -529,6 +533,12 @@
     <div class="middle">
         <svg id="graph" width="500 " height="500" style="margin: 20px"></svg>
         <input id="slider" type="range" min="2007" max="2021" value="2007" step="1" />
+
+        <div class="buttons">
+            <button id="back">Back</button>
+            <button id="forward">Forward</button>
+        </div>
+
         <div>
             <ul>
                 <li id="northeast">
@@ -547,10 +557,6 @@
                     Southwest
                 </li>
             </ul>
-        </div>
-        <div class="buttons">
-            <button id="back">Back</button>
-            <button id="forward">Forward</button>
         </div>
     </div>
 
@@ -753,22 +759,22 @@
                     .data(dataInitial)
                     .join(
                         enter => enter.append("circle")
-                        .attr("fill", d => colorScale(state_region_mapping[d.state]))
-                        .attr("cx", d => hoursScale(d.hours))
-                        .attr("cy", d => outputScale(d.output))
-                        .attr("r", d => employScale(d.employment))
-                        .attr("id", d => state_codes[us_state_to_abbrev[d.state]]
+                            .attr("fill", d => colorScale(state_region_mapping[d.state]))
+                            .attr("cx", d => hoursScale(d.hours))
+                            .attr("cy", d => outputScale(d.output))
+                            .attr("r", d => employScale(d.employment))
+                            .attr("id", d => state_codes[us_state_to_abbrev[d.state]]
 
 
-                        )
-                        .attr("opacity", 0.8)
-                        .call(enter => enter.transition().attr("opacity", 0.8)),
+                            )
+                            .attr("opacity", 0.8)
+                            .call(enter => enter.transition().attr("opacity", 0.8)),
                         update => update.call(update => update.transition()
                             .attr("fill", d => colorScale(state_region_mapping[d.state]))
                             .attr("cx", d => hoursScale(d.hours))
                             .attr("cy", d => outputScale(d.output))
                             .attr("r", d => employScale(d.employment)))
-                        .attr("id", d => state_codes[us_state_to_abbrev[d.state]])
+                            .attr("id", d => state_codes[us_state_to_abbrev[d.state]])
                         /*
                         .attr("opacity", d => {
                             if (selecetd_state_code != -1 && state_codes[us_state_to_abbrev[d.state]] !== selected_state_code) {
@@ -792,7 +798,7 @@
             let table = d3.select('#table');
 
 
-            d3.select("#slider").on("input", function(event) {
+            d3.select("#slider").on("input", function (event) {
                 let selected_year = event.target.value;
                 // console.log(selected_year);
                 // graph.selectAll('*').remove();
@@ -805,7 +811,7 @@
                 curr_year = parseInt(selected_year);
             });
 
-            d3.select("button#back").on("click", function(event) {
+            d3.select("button#back").on("click", function (event) {
                 if (curr_year != 2007) {
                     curr_year -= 1;
                 }
@@ -816,7 +822,7 @@
                 // table.selectAll('*').remove();
                 requestData_table(curr_year, "all");
             });
-            d3.select("button#forward").on("click", function(event) {
+            d3.select("button#forward").on("click", function (event) {
                 if (curr_year != 2021) {
                     curr_year += 1;
                 }
@@ -864,7 +870,7 @@
         </table>
     </div>
     <script>
-        const requestData_table = async function(sl_year, states) {
+        const requestData_table = async function (sl_year, states) {
             let table = d3.select('#table');
             let data = await d3.csv("processed_df.csv", d3.autoType);
             data = data.filter(d => d.year === parseInt(sl_year));
@@ -907,16 +913,16 @@
 
             let text_pay = d3.select("#payVal");
 
-            text_pay.select("#this_payVal").text("Pay:     " + pay.toFixed(2) + '   USD');
+            text_pay.select("#this_payVal").text("Pay:     " + pay.toFixed(2).toLocaleString('en') + '   USD');
             let text_hours = d3.select("#hoursVal");
 
-            text_hours.select("#this_hoursVal").text("Hours:     " + hours.toFixed(2) + '   Hours');
+            text_hours.select("#this_hoursVal").text("Hours:     " + Math.round(hours).toLocaleString('en') + '   Hours');
             let text_output = d3.select("#outputVal");
 
-            text_output.select("#this_outputVal").text("Average Output:     " + (output / 51).toFixed(2) + '   Millions USD');
+            text_output.select("#this_outputVal").text("Average Output:     " + Math.round((output / 51)).toLocaleString('en') + '   Millions USD');
             let text_employ = d3.select("#employmentVal");
 
-            text_employ.select("#this_employmentVal").text("Total employment:     " + employment.toFixed(2) + '   Thousands of People');
+            text_employ.select("#this_employmentVal").text("Total employment:     " + Math.round(employment).toLocaleString('en') + '   Thousands of People');
 
         }
         requestData_table(2007, "all");
