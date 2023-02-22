@@ -35,12 +35,69 @@
         display: flex;
         flex-direction: column;
     }
+
+    #year-content{
+        font-family: 'Helvetica Neue, Arial';
+        font-weight: 500;
+        font-size: 80;
+        fill: '#ccc';
+        text-align: center;
+    }
+
+    #table{
+        font-family: 'Helvetica Neue, Arial';
+        font-weight: 70;
+        font-size: 20;
+        fill: '#ccc';
+        text-align: left;
+    }
+
+    #table_title{
+        font-family: 'Helvetica Neue, Arial';
+        font-weight: 70;
+        font-size: 25;
+        fill: '#ccc';
+        text-align: center;
+    }
+
+    .td{
+        margin: 50px;
+    }
+
+    .right{
+        padding-top: 100px;
+    }
+    
+
 </style>
+
+<div id = 'big-year'>
+    <p id = 'year-content'></p>
+</div>
+<script>
+    function updateTitle(sl_year){
+        let big_title = d3.select("#big-year")
+        big_title.select("#year-content").text(sl_year);
+    }
+    updateTitle(2007);
+    // d3.select("#big-year").select("#year-content").text(year);
+</script>
 <div class="main">
+    <!-- <div id = 'big-year'>
+        <p id = 'year-content'></p>
+    </div>
+    <script>
+        function updateTitle(sl_year){
+            let big_title = d3.select("#big-year")
+            big_title.select("#year-content").text(sl_year);
+        }
+        updateTitle(2007);
+        // d3.select("#big-year").select("#year-content").text(year);
+    </script> -->
+    
+
     <div id='chloropleth'>
         <svg id="map" height="500" width="500"></svg>
-        <svg id="mapLegend" height="100" width="600" style="background: #fff; margin-top:30px"></svg>s
-
 
         <script>
             const svg = d3.select("#map");
@@ -57,16 +114,134 @@
             const map = svg.append("g")
                 .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
 
-            const request_all_data = async function () {
+
+             
+
+            const requestData_map = async function (sl_year) {
+
                 const us = await d3.json("us-smaller.json");
                 var states = topojson.feature(us, us.objects.states);
                 var statesMesh = topojson.mesh(us, us.objects.states);
                 var projection = d3.geoAlbersUsa().fitSize([mapWidth, mapHeight], states);
                 var path = d3.geoPath().projection(projection);
 
-                let data = await d3.csv("processed_df.csv", d3.autoType);
-                data = data.filter(d => d.year === parseInt(2007));
 
+                let abbv = us_state_to_abbrev = {
+                    "Alabama": "AL",
+                    "Alaska": "AK",
+                    "Arizona": "AZ",
+                    "Arkansas": "AR",
+                    "California": "CA",
+                    "Colorado": "CO",
+                    "Connecticut": "CT",
+                    "Delaware": "DE",
+                    "Florida": "FL",
+                    "Georgia": "GA",
+                    "Hawaii": "HI",
+                    "Idaho": "ID",
+                    "Illinois": "IL",
+                    "Indiana": "IN",
+                    "Iowa": "IA",
+                    "Kansas": "KS",
+                    "Kentucky": "KY",
+                    "Louisiana": "LA",
+                    "Maine": "ME",
+                    "Maryland": "MD",
+                    "Massachusetts": "MA",
+                    "Michigan": "MI",
+                    "Minnesota": "MN",
+                    "Mississippi": "MS",
+                    "Missouri": "MO",
+                    "Montana": "MT",
+                    "Nebraska": "NE",
+                    "Nevada": "NV",
+                    "New Hampshire": "NH",
+                    "New Jersey": "NJ",
+                    "New Mexico": "NM",
+                    "New York": "NY",
+                    "North Carolina": "NC",
+                    "North Dakota": "ND",
+                    "Ohio": "OH",
+                    "Oklahoma": "OK",
+                    "Oregon": "OR",
+                    "Pennsylvania": "PA",
+                    "Rhode Island": "RI",
+                    "South Carolina": "SC",
+                    "South Dakota": "SD",
+                    "Tennessee": "TN",
+                    "Texas": "TX",
+                    "Utah": "UT",
+                    "Vermont": "VT",
+                    "Virginia": "VA",
+                    "Washington": "WA",
+                    "West Virginia": "WV",
+                    "Wisconsin": "WI",
+                    "Wyoming": "WY",
+                    "District of Columbia": "DC",
+                    "American Samoa": "AS",
+                    "Guam": "GU",
+                    "Northern Mariana Islands": "MP",
+                    "Puerto Rico": "PR",
+                    "United States Minor Outlying Islands": "UM",
+                    "U.S. Virgin Islands": "VI",
+                };
+                let fips_codes = state_codes = {
+                    'WA': '53',
+                    'DE': '10',
+                    'DC': '11',
+                    'WI': '55',
+                    'WV': '54',
+                    'HI': '15',
+                    'FL': '12',
+                    'WY': '56',
+                    'PR': '72',
+                    'NJ': '34',
+                    'NM': '35',
+                    'TX': '48',
+                    'LA': '22',
+                    'NC': '37',
+                    'ND': '38',
+                    'NE': '31',
+                    'TN': '47',
+                    'NY': '36',
+                    'PA': '42',
+                    'AK': '02',
+                    'NV': '32',
+                    'NH': '33',
+                    'VA': '51',
+                    'CO': '08',
+                    'CA': '06',
+                    'AL': '01',
+                    'AR': '05',
+                    'VT': '50',
+                    'IL': '17',
+                    'GA': '13',
+                    'IN': '18',
+                    'IA': '19',
+                    'MA': '25',
+                    'AZ': '04',
+                    'ID': '16',
+                    'CT': '09',
+                    'ME': '23',
+                    'MD': '24',
+                    'OK': '40',
+                    'OH': '39',
+                    'UT': '49',
+                    'MO': '29',
+                    'MN': '27',
+                    'MI': '26',
+                    'RI': '44',
+                    'KS': '20',
+                    'MT': '30',
+                    'MS': '28',
+                    'SC': '45',
+                    'KY': '21',
+                    'OR': '41',
+                    'SD': '46'
+                };
+                // load dataset
+                let data = await d3.csv("processed_df.csv", d3.autoType);
+                data = data.filter(d => d.year === parseInt(sl_year));
                 // const data = d3.select("processed_df.csv");
                 let compExtent = d3.extent(data, d => d.pay);
                 let compScale = d3.scaleSequential(d3.interpolateViridis).domain(compExtent);
@@ -74,393 +249,120 @@
                     .domain(d3.extent(data, d => d.pay))
                     .range(["#D3D3D3", "#d1e8ed", "#adc2da", "#8879b3", "#762b80"]);
 
-                // the below function drawLegend is written by Professor Rz from INFO 3300 Oct 3 Lecture 
-                function drawLegend(legendSelector, legendColorScale) {
+                let stateIdCounts = {}
+                data.forEach(row => {
 
-                    // This code should adapt to a variety of different kinds of color scales
-                    //  Credit Prof. Rz if you are basing a legend on this structure, and note PERFORMANCE CONSIDERATIONS
+                    stateIdCounts[fips_codes[abbv[row.state]]] = row.pay;
+                });
 
-                    // Shrink legend bar by 5 px inwards from sides of SVG
-                    const offsets = {
-                        width: 10,
-                        top: 2,
-                        bottom: 24
-                    };
-                    // Number of integer 'pixel steps' to draw when showing continuous scales
-                    //    Warning, not using a canvas element so lots of rect tags will be created for low stepSize, causing issues with performance -- keep this large
-                    const stepSize = 4;
-                    // Extend the minmax by 0% in either direction to expose more features by default
-                    const minMaxExtendPercent = 0;
+                let statesPath = map.selectAll("path.state")
+                    .data(states.features)
+                    .join(
+                        enter => enter.append("path").attr("d", path)
+                            .attr("class", "state")
+                            .style("fill", d => payScale(
+                                stateIdCounts[d.id])).call(enter => enter.transition().attr("opacity", 0.8)),
+                        update => update.call(update => update.transition().style("fill", d => payScale(
+                            stateIdCounts[d.id]))),
+                        exit => exit.call(exit => exit.transition().attr('opacity', 0).remove())
+                    );
+                map.selectAll('.outline').remove();
+                map.append("path").datum(statesMesh)
+                    .attr("class", "outline")
+                    .attr("d", path);
+                // map.selectAll("state").style("fill", d => colorScale(d.properties.percent_artists))
+
+               
+
+                function getKeyByValue(object, value) {
+                    return Object.keys(object).find(key => object[key] === value);
+                }
+
+                let table = d3.select('#table');
+
+                map.selectAll(".state").on("click", clicked_map);
+                graph.selectAll("circle").on("click", clicked_graph);
 
 
-                    const legend = d3.select(legendSelector);
-                    const legendHeight = legend.attr("height");
-                    const legendBarWidth = legend.attr("width") - (offsets.width * 2);
-                    const legendMinMax = d3.extent(legendColorScale.domain());
-                    // recover the min and max values from most kinds of numeric scales
-                    const minMaxExtension = (legendMinMax[1] - legendMinMax[0]) * minMaxExtendPercent;
-                    const barHeight = legendHeight - offsets.top - offsets.bottom;
-
-                    // In this case the "data" are pixels, and we get numbers to use in colorScale
-                    // Use this to make axis labels
-                    let barScale = d3.scaleLinear().domain([legendMinMax[0] - minMaxExtension,
-                    legendMinMax[1] + minMaxExtension])
-                        .range([0, legendBarWidth]);
-                    let barAxis = d3.axisBottom(barScale);
-
-                    // Place for bar slices to live
-                    let bar = legend.append("g")
-                        .attr("class", "legend colorbar")
-                        .attr("transform", `translate(${offsets.width},${offsets.top})`)
-
-                    // ****** SWITCHES FOR DIFFERENT SCALE TYPES ******
-
-                    // Check if we're using a binning scale - if so, we make blocks of color
-                    if (legendColorScale.hasOwnProperty('thresholds') || legendColorScale.hasOwnProperty('quantiles')) {
-                        // Get the thresholds
-                        let thresholds = [];
-                        if (legendColorScale.hasOwnProperty('thresholds')) { thresholds = legendColorScale.thresholds() }
-                        else { thresholds = legendColorScale.quantiles() }
-
-                        const barThresholds = [legendMinMax[0], ...thresholds, legendMinMax[1]];
-
-                        // Use the quantile breakpoints plus the min and max of the scale as tick values
-                        barAxis.tickValues(barThresholds);
-
-                        // Draw rectangles between the threshold segments
-                        for (let i = 0; i < barThresholds.length - 1; i++) {
-                            let dataStart = barThresholds[i];
-                            let dataEnd = barThresholds[i + 1];
-                            let pixelStart = barAxis.scale()(dataStart);
-                            let pixelEnd = barAxis.scale()(dataEnd);
-
-                            bar.append("rect")
-                                .attr("x", pixelStart)
-                                .attr("y", 0)
-                                .attr("width", pixelEnd - pixelStart)
-                                .attr("height", barHeight)
-                                .style("fill", legendColorScale((dataStart + dataEnd) / 2.0));
-                        }
-                    }
-                    // Else if we have a continuous / roundable scale
-                    else if (legendColorScale.hasOwnProperty('rangeRound')) {
-                        // NOTE: The barAxis may round min and max values to make them pretty
-                        // ** This also means there is a risk of the legend going beyond scale bounds
-                        // We need to use the barAxis min and max just to be sure the bar is complete
-                        //    Using barAxis.scale().invert() goes from *axis* pixels to data values easily
-                        // ** We also need to create patches for the scale if the labels exceed bounds
-                        //     (floating point comparisons risky for small data ranges,but not a big deal
-                        //      because patches will be indistinguishable from actual scale bottom)
-                        // It's likely that scale clamping will actually do this for us elegantly
-                        // ...but better to be safer and patch the regions anyways
-
-                        for (let i = 0; i < legendBarWidth; i = i + stepSize) {
-
-                            let center = i + (stepSize / 2);
-                            let dataCenter = barAxis.scale().invert(center);
-
-                            // below normal scale bounds
-                            if (dataCenter < legendMinMax[0]) {
-                                bar.append("rect")
-                                    .attr("x", i)
-                                    .attr("y", 0)
-                                    .attr("width", stepSize)
-                                    .attr("height", barHeight)
-                                    .style("fill", legendColorScale(legendMinMax[0]));
+                function clicked_map(event, d) {
+                    // Get the state code of the selected state
+                    let this_state_code = event.target.__data__.id
+                    this_state_code = this_state_code < 10 ? ('0' + this_state_code).toString() : this_state_code.toString();
+                    let this_abbr = getKeyByValue(state_codes, this_state_code);
+                    let this_state = getKeyByValue(us_state_to_abbrev, this_abbr);
+                    // Remove the previous table
+                    // table.selectAll('*').remove();
+                    //Check whether the same state is selected
+                    if (parseInt(this_state_code) !== curr_state_selected_id) {
+                        // If not so, move to a new state
+                        requestData_table(sl_year, this_state);
+                        // Highlight the state on the map
+                        map.selectAll(".state").transition().duration(200).style("opacity", d => {
+                            if (parseInt(d.id) === parseInt(this_state_code)) {
+                                return 1;
                             }
-                            // within normal scale bounds
-                            else if (dataCenter < legendMinMax[1]) {
-                                bar.append("rect")
-                                    .attr("x", i)
-                                    .attr("y", 0)
-                                    .attr("width", stepSize)
-                                    .attr("height", barHeight)
-                                    .style("fill", legendColorScale(dataCenter));
-                            }
-                            // above normal scale bounds
-                            else {
-                                bar.append("rect")
-                                    .attr("x", i)
-                                    .attr("y", 0)
-                                    .attr("width", stepSize)
-                                    .attr("height", barHeight)
-                                    .style("fill", legendColorScale(legendMinMax[1]));
-                            }
-
-                        }
-                    }
-                    // Otherwise we have a nominal scale
-                    else {
-                        let nomVals = legendColorScale.domain().sort();
-
-                        // Use a scaleBand to make blocks of color and simple labels
-                        let barScale = d3.scaleBand().domain(nomVals)
-                            .range([0, legendBarWidth])
-                            .padding(0.05);
-                        barAxis.scale(barScale);
-
-                        // Draw rectangles for each nominal entry
-                        nomVals.forEach(d => {
-                            bar.append("rect")
-                                .attr("x", barScale(d))
-                                .attr("y", 0)
-                                .attr("width", barScale.bandwidth())
-                                .attr("height", barHeight)
-                                .style("fill", legendColorScale(d));
+                            return 0.1;
                         });
+                        // Highlight the state on the graph
+                        graph.selectAll("circle").transition().duration(200).style("opacity", d => {
+                            // console.log(d);
+                            if (parseInt(state_codes[us_state_to_abbrev[d.state]]) === parseInt(this_state_code)) {
+                                return 1;
+                            }
+                            return 0.1;
+                        });
+                        // Save the most recent selected state
+                        curr_state_selected_id = parseInt(this_state_code);
+                    } else {
+                        // If the same state is clicked again, we de-select the state and show the overview
+                        map.selectAll(".state").transition().duration(200).style("opacity", d => 1);
+                        graph.selectAll("circle").transition().duration(200).style("opacity", d => 1);
+                        curr_state_selected_id = "";
+                        requestData_table(sl_year, "all");
                     }
-                    // DONE w/SWITCH
 
-                    // Finally, draw legend labels
-                    legend.append("g")
-                        .attr("class", "legend axis")
-                        .attr("transform", `translate(${offsets.width},${offsets.top + barHeight + 5})`)
-                        .call(barAxis);
+
 
                 }
+                let curr_state_selected_id = '';
 
-                drawLegend("#mapLegend", compScale);
-
-                const requestData_map = async function (sl_year) {
-
-                    let abbv = us_state_to_abbrev = {
-                        "Alabama": "AL",
-                        "Alaska": "AK",
-                        "Arizona": "AZ",
-                        "Arkansas": "AR",
-                        "California": "CA",
-                        "Colorado": "CO",
-                        "Connecticut": "CT",
-                        "Delaware": "DE",
-                        "Florida": "FL",
-                        "Georgia": "GA",
-                        "Hawaii": "HI",
-                        "Idaho": "ID",
-                        "Illinois": "IL",
-                        "Indiana": "IN",
-                        "Iowa": "IA",
-                        "Kansas": "KS",
-                        "Kentucky": "KY",
-                        "Louisiana": "LA",
-                        "Maine": "ME",
-                        "Maryland": "MD",
-                        "Massachusetts": "MA",
-                        "Michigan": "MI",
-                        "Minnesota": "MN",
-                        "Mississippi": "MS",
-                        "Missouri": "MO",
-                        "Montana": "MT",
-                        "Nebraska": "NE",
-                        "Nevada": "NV",
-                        "New Hampshire": "NH",
-                        "New Jersey": "NJ",
-                        "New Mexico": "NM",
-                        "New York": "NY",
-                        "North Carolina": "NC",
-                        "North Dakota": "ND",
-                        "Ohio": "OH",
-                        "Oklahoma": "OK",
-                        "Oregon": "OR",
-                        "Pennsylvania": "PA",
-                        "Rhode Island": "RI",
-                        "South Carolina": "SC",
-                        "South Dakota": "SD",
-                        "Tennessee": "TN",
-                        "Texas": "TX",
-                        "Utah": "UT",
-                        "Vermont": "VT",
-                        "Virginia": "VA",
-                        "Washington": "WA",
-                        "West Virginia": "WV",
-                        "Wisconsin": "WI",
-                        "Wyoming": "WY",
-                        "District of Columbia": "DC",
-                        "American Samoa": "AS",
-                        "Guam": "GU",
-                        "Northern Mariana Islands": "MP",
-                        "Puerto Rico": "PR",
-                        "United States Minor Outlying Islands": "UM",
-                        "U.S. Virgin Islands": "VI",
-                    };
-                    let fips_codes = state_codes = {
-                        'WA': '53',
-                        'DE': '10',
-                        'DC': '11',
-                        'WI': '55',
-                        'WV': '54',
-                        'HI': '15',
-                        'FL': '12',
-                        'WY': '56',
-                        'PR': '72',
-                        'NJ': '34',
-                        'NM': '35',
-                        'TX': '48',
-                        'LA': '22',
-                        'NC': '37',
-                        'ND': '38',
-                        'NE': '31',
-                        'TN': '47',
-                        'NY': '36',
-                        'PA': '42',
-                        'AK': '02',
-                        'NV': '32',
-                        'NH': '33',
-                        'VA': '51',
-                        'CO': '08',
-                        'CA': '06',
-                        'AL': '01',
-                        'AR': '05',
-                        'VT': '50',
-                        'IL': '17',
-                        'GA': '13',
-                        'IN': '18',
-                        'IA': '19',
-                        'MA': '25',
-                        'AZ': '04',
-                        'ID': '16',
-                        'CT': '09',
-                        'ME': '23',
-                        'MD': '24',
-                        'OK': '40',
-                        'OH': '39',
-                        'UT': '49',
-                        'MO': '29',
-                        'MN': '27',
-                        'MI': '26',
-                        'RI': '44',
-                        'KS': '20',
-                        'MT': '30',
-                        'MS': '28',
-                        'SC': '45',
-                        'KY': '21',
-                        'OR': '41',
-                        'SD': '46'
-                    };
-                    // load dataset
-                    // let data = await d3.csv("processed_df.csv", d3.autoType);
-                    data = data.filter(d => d.year === parseInt(sl_year));
+                function clicked_graph(event, d) {
+                    // Similar to clicked_map
+                    let this_state_code = event.target.id;
+                    let this_abbr = getKeyByValue(state_codes, this_state_code);
+                    let this_state = getKeyByValue(us_state_to_abbrev, this_abbr);
 
 
+                    if (parseInt(this_state_code) !== curr_state_selected_id) {
+                        requestData_table(sl_year, this_state);
+                        map.selectAll(".state").transition().duration(200).style("opacity", d => {
+                            if (parseInt(d.id) === parseInt(this_state_code)) {
+                                return 1;
+                            }
+                            return 0.1;
+                        });
+                        graph.selectAll("circle").transition().duration(200).style("opacity", d => {
+                            // console.log(d);
+                            if (parseInt(state_codes[us_state_to_abbrev[d.state]]) === parseInt(this_state_code)) {
+                                return 1;
+                            }
+                            return 0.1;
+                        });
+                        curr_state_selected_id = parseInt(this_state_code);
 
-
-
-                    let stateIdCounts = {}
-                    data.forEach(row => {
-
-                        stateIdCounts[fips_codes[abbv[row.state]]] = row.pay;
-                    });
-
-                    let statesPath = map.selectAll("path.state")
-                        .data(states.features)
-                        .join(
-                            enter => enter.append("path").attr("d", path)
-                                .attr("class", "state")
-                                .style("fill", d => payScale(
-                                    stateIdCounts[d.id])).call(enter => enter.transition().attr("opacity", 1)),
-                            update => update.call(update => update.transition().style("fill", d => payScale(
-                                stateIdCounts[d.id]))),
-                            exit => exit.call(exit => exit.transition().attr('opacity', 0).remove())
-                        );
-                    map.selectAll('.outline').remove();
-                    map.append("path").datum(statesMesh)
-                        .attr("class", "outline")
-                        .attr("d", path);
-                    // map.selectAll("state").style("fill", d => colorScale(d.properties.percent_artists))
-
-
-                    function getKeyByValue(object, value) {
-                        return Object.keys(object).find(key => object[key] === value);
-                    }
-
-                    let table = d3.select('#table');
-
-                    map.selectAll(".state").on("click", clicked_map);
-                    graph.selectAll("circle").on("click", clicked_graph);
-
-
-
-                    function clicked_map(event, d) {
-                        // Get the state code of the selected state
-                        let this_state_code = event.target.__data__.id
-                        this_state_code = this_state_code < 10 ? ('0' + this_state_code).toString() : this_state_code.toString();
-                        let this_abbr = getKeyByValue(state_codes, this_state_code);
-                        let this_state = getKeyByValue(us_state_to_abbrev, this_abbr);
-                        // Remove the previous table
-                        table.selectAll('*').remove();
-                        //Check whether the same state is selected
-                        if (parseInt(this_state_code) !== curr_state_selected_id) {
-                            // If not so, move to a new state
-                            requestData_table(sl_year, this_state);
-                            // Highlight the state on the map
-                            map.selectAll(".state").transition().duration(200).style("opacity", d => {
-                                if (parseInt(d.id) === parseInt(this_state_code)) {
-                                    return 1;
-                                }
-                                return 0.5;
-                            });
-                            // Highlight the state on the graph
-                            graph.selectAll("circle").transition().duration(200).style("opacity", d => {
-                                // console.log(d);
-                                if (parseInt(state_codes[us_state_to_abbrev[d.state]]) === parseInt(this_state_code)) {
-                                    return 1;
-                                }
-                                return 0.5;
-                            });
-                            // Save the most recent selected state
-                            curr_state_selected_id = parseInt(this_state_code);
-                        } else {
-                            // If the same state is clicked again, we de-select the state and show the overview
-                            map.selectAll(".state").transition().duration(200).style("opacity", d => 1);
-                            graph.selectAll("circle").transition().duration(200).style("opacity", d => 1);
-                            curr_state_selected_id = "";
-                            requestData_table(sl_year, "all");
-                        }
-
-
-
-                    }
-                    let curr_state_selected_id = '';
-
-                    function clicked_graph(event, d) {
-                        // Similar to clicked_map
-                        let this_state_code = event.target.id;
-                        let this_abbr = getKeyByValue(state_codes, this_state_code);
-                        let this_state = getKeyByValue(us_state_to_abbrev, this_abbr);
-                        table.selectAll('*').remove();
-
-                        if (parseInt(this_state_code) !== curr_state_selected_id) {
-                            requestData_table(sl_year, this_state);
-                            map.selectAll(".state").transition().duration(200).style("opacity", d => {
-                                if (parseInt(d.id) === parseInt(this_state_code)) {
-                                    return 1;
-                                }
-                                return 0.1;
-                            });
-                            graph.selectAll("circle").transition().duration(200).style("opacity", d => {
-                                // console.log(d);
-                                if (parseInt(state_codes[us_state_to_abbrev[d.state]]) === parseInt(this_state_code)) {
-                                    return 1;
-                                }
-                                return 0.1;
-                            });
-                            curr_state_selected_id = parseInt(this_state_code);
-
-                        } else {
-                            map.selectAll(".state").transition().duration(200).style("opacity", 1);
-                            graph.selectAll("circle").transition().duration(200).style("opacity", 1);
-                            curr_state_selected_id = '';
-                        }
-
-
+                    } else {
+                        map.selectAll(".state").transition().duration(200).style("opacity", 1);
+                        graph.selectAll("circle").transition().duration(200).style("opacity", 1);
+                        curr_state_selected_id = '';
+                        requestData_table(sl_year, "all");
                     }
 
 
                 }
-                requestData_map(2007);
+
 
             }
-            request_all_data();
-
+            requestData_map(2007);
         </script>
     </div>
 
@@ -643,7 +545,6 @@
 
             // getData(2007);
 
-
             let text_year = d3.select("#text_year");
 
 
@@ -686,7 +587,7 @@
                                 state_codes[us_state_to_abbrev[d.state]]
                             )
                             .attr("opacity", 0.8)
-                            .call(enter => enter.transition().attr("opacity", 0.9)),
+                            .call(enter => enter.transition().attr("opacity", 0.8)),
                         update => update.call(update => update.transition()
                             .attr("fill", d => colorScale(state_region_mapping[d.state]))
                             .attr("cx", d => hoursScale(d.hours))
@@ -722,52 +623,10 @@
                 // graph.selectAll('*').remove();
                 getData(selected_year);
                 requestData_map(selected_year);
-                table.selectAll('*').remove();
+                // table.selectAll('*').remove();
                 requestData_table(selected_year, "all");
+                updateTitle(selected_year);
                 curr_year = parseInt(selected_year);
-
-                // text_year.html("");
-                // let print_text = text_year.append("text").text(selected_year).attr("x", 100).attr("y", 100).style("font", "100px").style("fill", "darkred").attr("class", "year");
-                let print_text = text_year.select("#year").text(selected_year);
-
-                // console.log(print_text);
-                // chartArea.selectAll("text.text_year")
-                //     .data(dataInitial)
-                //     .join(
-                //         enter => enter.append("text")
-                //             .attr("fill", "black")
-                //             .attr('class', "text_year")
-                //             .call(enter => enter.transition()),
-                //         update => update.call(update => update.transition()
-                //             // .attr("fill", d => colorScale(state_region_mapping[d.state]))
-                //             // .attr("cx", d => hoursScale(d.hours))
-                //             // .attr("cy", d => outputScale(d.output))
-                //             // .attr("r", d => employScale(d.employment))),
-                //             // .call( update => update.transition().duration(100)
-                //         ),
-                //         exit => exit.call(exit => exit.transition().attr('opacity', 0).remove())
-                //         // exit => exit
-                //     );
-
-                // create a cell in each row for each column
-                var cells = text_year.selectAll('text#year')
-                    // .data(selected_year)
-                    .join(
-                        enter => enter.append('text')
-                            .call(enter => enter.transition()),
-                        update => update.call(update => update.transition()
-                            .attr('fill', 'red')),
-                        exit => exit.call(exit => exit.transition().remove())
-                    )
-                // const yearLabel = graph.append('text')
-                //     .attr('class', 'year')
-                //     .attr('x', 40)
-                //     .attr('y', height - margin.bottom - 600)
-                //     .attr('fill', '#ccc')
-                //     .attr('font-family', 'Helvetica Neue, Arial')
-                //     .attr('font-weight', 500)
-                //     .attr('font-size', 80)
-                //     .text(selected_year);
             });
 
             d3.select("button#back").on("click", function (event) {
@@ -777,7 +636,8 @@
                 d3.select('#slider').property("value", curr_year);
                 getData(curr_year);
                 requestData_map(curr_year);
-                table.selectAll('*').remove();
+                updateTitle(curr_year);
+                // table.selectAll('*').remove();
                 requestData_table(curr_year, "all");
             });
             d3.select("button#forward").on("click", function (event) {
@@ -787,7 +647,8 @@
                 d3.select('#slider').property("value", curr_year);
                 getData(curr_year);
                 requestData_map(curr_year);
-                table.selectAll('*').remove();
+                updateTitle(curr_year);
+                // table.selectAll('*').remove();
                 requestData_table(curr_year, "all");
             })
 
@@ -797,29 +658,33 @@
     </script>
 
     <div class="right">
+        <div id="table_title">
+            <p id="table_title_content"></p>
+        </div>
 
         <table id="table">
             <th id="thead"></th>
             <tr>
-                <td>Pay</td>
-                <td id="payVal"></td>
+                <td id="payVal">
+                    <p id="this_payVal">Pay</p>
+                </td>
             </tr>
             <tr>
-                <td>Hours Worked</td>
-                <td id="hoursVal"></td>
+                <td id="hoursVal">
+                    <p id="this_hoursVal"></p>
+                </td>
             </tr>
             <tr>
-                <td>Average Output</td>
-                <td id="outputVal"></td>
+                <td id="outputVal">
+                    <p id ="this_outputVal" ></p>
+                </td>
             </tr>
             <tr>
-                <td>Total Employment</td>
-                <td id="employVal"></td>
+                <td id="employmentVal">
+                    <p id="this_employmentVal"></p>
+                </td>
             </tr>
         </table>
-        <div id="text_year">
-            <p id="year"></p>
-        </div>
     </div>
     <script>
         const requestData_table = async function (sl_year, states) {
@@ -830,119 +695,51 @@
 
             let table_data;
             let title;
+            let pay = 0;
+            let hours = 0;
+            let output = 0;
+            let employment = 0;
             if (states == "all") {
-                title = "All States' Data from " + sl_year;
-                let pay = 0;
-                let hours = 0;
-                let output = 0;
-                let employment = 0;
+                title = "U.S. Data from " + sl_year;
                 for (let i = 0; i < data.length; i++) {
                     pay += data[i].pay;
-                    hours += data[i].hours;
+                    hours += data[i].avg_hours;
                     output += data[i].output;
                     employment += data[i].employment;
                 }
 
-                table_data = [{
-                    "type": 'Pay',
-                    "data": pay.toFixed(2)
-                }, {
-                    "type": 'Hours',
-                    "data": hours.toFixed(2)
-                }, {
-                    "type": 'Output',
-                    "data": output.toFixed(2)
-                }, {
-                    "type": 'Employment',
-                    "data": employment.toFixed(2)
-                }];
+                ;
             } else {
-                title = "Data from " + states + " from " + sl_year;
+                title = states + " Data from " + sl_year;
                 this_state = data.filter(d => d.state === states);
-                // console.log(this_state);
-                table_data = [{
-                    "type": 'Pay',
-                    "data": this_state[0]['pay'].toFixed(2)
-                }, {
-                    "type": 'Hours',
-                    "data": this_state[0]['hours'].toFixed(2)
-                }, {
-                    "type": 'Output',
-                    "data": this_state[0]['output'].toFixed(2)
-                }, {
-                    "type": 'Employment',
-                    "data": this_state[0]['employment'].toFixed(2)
-                }];
+                pay = this_state[0]['pay'];
+                hours = this_state[0]['hours'];
+                output = this_state[0]['output'];
+                employment = this_state[0]['employment'];
+
             }
 
 
-            function tabulate(data, columns) {
-                // var table = d3.select('#table');
-                // // table.append('text').text(title);
-                // var thead = table.append('thead');
-                // var tbody = table.append('tbody');
 
-                let table = d3.select("table");
-                let thead = table.select("#year")
+            let text_title =  d3.select("#table_title");
+            text_title.select("#table_title_content").text(title);
 
-                thead.append('text').text(title).attr('font-size', '10').attr('text-anchor', 'end');
-                // append the header rows
-                thead.append('tr')
-                    .selectAll('th')
-                    .data(columns)
-                    .join(
-                        enter => enter.append('th')
-                            .text(function (column) {
-                                return column;
-                            })
-                            .call(enter => enter.transition().attr("opacity", 0.8)),
-                        update => update.call(update => update.transition()),
-                        exit => exit.call(exit => exit.transition().attr('opacity', 0).remove())
-                    )
+            let text_pay = d3.select("#payVal");
 
-                // create a row for each object in the data
-                var rows = tbody.selectAll('tr')
-                    .data(data)
-                    .join(
-                        enter => enter.append('tr')
-                            .call(enter => enter.transition().attr("opacity", 0.8)),
-                        update => update.call(update => update.transition()),
-                        exit => exit.call(exit => exit.transition().attr('opacity', 0).remove())
-                    )
-                // .enter()
-                // .append('tr');
+            text_pay.select("#this_payVal").text("Pay:     " + pay.toFixed(2) + '   USD');
+            let text_hours = d3.select("#hoursVal");
 
-                // create a cell in each row for each column
-                var cells = rows.selectAll('td')
-                    .data(function (row) {
-                        return columns.map(function (column) {
-                            return {
-                                column: column,
-                                value: row[column]
-                            };
-                        });
-                    })
-                    .join(
-                        enter => enter.append('td')
-                            .text(function (d) {
-                                return d.value;
-                            })
-                            .call(enter => enter.transition().attr("opacity", 0.8)),
-                        update => update.call(update => update.transition()
-                            .attr('fill', 'red')),
-                        exit => exit.call(exit => exit.transition().attr('opacity', 0).remove())
-                    )
-                // .enter()
-                // .append('td')
-                // .text(function(d) {
-                //     return d.value;
-                // });
+            text_hours.select("#this_hoursVal").text("Hours:     " + hours.toFixed(2) + '   Hours');
+            let text_output = d3.select("#outputVal");
 
-                return table;
-            }
+            text_output.select("#this_outputVal").text("Average Output:     " + (output / 51).toFixed(2) + '   Millions USD');
+            let text_employ = d3.select("#employmentVal");
+
+            text_employ.select("#this_employmentVal").text("Total employment:     " + employment.toFixed(2) + '   Thousands of People');
+
 
             // render the tables
-            tabulate(table_data, ['type', 'data']); // 2 column table
+            // tabulate(table_data, ['type', 'data']); // 2 column table
         }
         requestData_table(2007, "all");
     </script>
@@ -954,4 +751,5 @@
 
 </body>
 
+</html>
 </html>
