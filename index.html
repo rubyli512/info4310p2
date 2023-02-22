@@ -35,32 +35,35 @@
         display: flex;
         flex-direction: column;
     }
-
-    #west {
-        color: rgb(225, 131, 0);
-    }
-
-    #south {
-        color: rgb(0, 119, 255);
-    }
-
-    #northeast {
-        color: red;
-    }
-
-    #southwest {
-        color: green;
-    }
-
-    #midwest {
-        color: rgb(118, 14, 187);
-    }
 </style>
+
+<div id = 'big-year'>
+    <p id = 'year-content'></p>
+</div>
+<script>
+    function updateTitle(sl_year){
+        let big_title = d3.select("#big-year")
+        big_title.select("#year-content").text(sl_year);
+    }
+    updateTitle(2007);
+    // d3.select("#big-year").select("#year-content").text(year);
+</script>
 <div class="main">
+    <!-- <div id = 'big-year'>
+        <p id = 'year-content'></p>
+    </div>
+    <script>
+        function updateTitle(sl_year){
+            let big_title = d3.select("#big-year")
+            big_title.select("#year-content").text(sl_year);
+        }
+        updateTitle(2007);
+        // d3.select("#big-year").select("#year-content").text(year);
+    </script> -->
+    
+
     <div id='chloropleth'>
         <svg id="map" height="500" width="500"></svg>
-        <svg id="mapLegend" height="100" width="600" style="background: #fff; margin-top:30px"></svg>s
-
 
         <script>
             const svg = d3.select("#map");
@@ -77,7 +80,11 @@
             const map = svg.append("g")
                 .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
 
-            const request_all_data = async function () {
+
+             
+
+            const requestData_map = async function (sl_year) {
+
                 const us = await d3.json("us-smaller.json");
                 var states = topojson.feature(us, us.objects.states);
                 var statesMesh = topojson.mesh(us, us.objects.states);
@@ -85,7 +92,7 @@
                 var path = d3.geoPath().projection(projection);
 
                 let data = await d3.csv("processed_df.csv", d3.autoType);
-                // data = data.filter(d => d.year === parseInt(2007));
+                data = data.filter(d => d.year === parseInt(2007));
 
                 // const data = d3.select("processed_df.csv");
                 let compExtent = d3.extent(data, d => d.pay);
@@ -243,7 +250,6 @@
 
                 const requestData_map = async function (sl_year) {
 
-
                     let abbv = us_state_to_abbrev = {
                         "Alabama": "AL",
                         "Alaska": "AK",
@@ -362,123 +368,123 @@
                     data = data.filter(d => d.year === parseInt(sl_year));
 
 
+
+
+
                     let stateIdCounts = {}
                     data.forEach(row => {
 
-                        stateIdCounts[fips_codes[abbv[row.state]]] = row.pay;
-                    });
+                    stateIdCounts[fips_codes[abbv[row.state]]] = row.pay;
+                });
 
-                    let statesPath = map.selectAll("path.state")
-                        .data(states.features)
-                        .join(
-                            enter => enter.append("path").attr("d", path)
-                                .attr("class", "state")
-                                .style("fill", d => payScale(
-                                    stateIdCounts[d.id])).call(enter => enter.transition().attr("opacity", 1)),
-                            update => update.call(update => update.transition().style("fill", d => payScale(
-                                stateIdCounts[d.id]))),
-                            exit => exit.call(exit => exit.transition().attr('opacity', 0).remove())
-                        );
-                    map.selectAll('.outline').remove();
-                    map.append("path").datum(statesMesh)
-                        .attr("class", "outline")
-                        .attr("d", path);
-                    // map.selectAll("state").style("fill", d => colorScale(d.properties.percent_artists))
+                let statesPath = map.selectAll("path.state")
+                    .data(states.features)
+                    .join(
+                        enter => enter.append("path").attr("d", path)
+                            .attr("class", "state")
+                            .style("fill", d => payScale(
+                                stateIdCounts[d.id])).call(enter => enter.transition().attr("opacity", 0.8)),
+                        update => update.call(update => update.transition().style("fill", d => payScale(
+                            stateIdCounts[d.id]))),
+                        exit => exit.call(exit => exit.transition().attr('opacity', 0).remove())
+                    );
+                map.selectAll('.outline').remove();
+                map.append("path").datum(statesMesh)
+                    .attr("class", "outline")
+                    .attr("d", path);
+                // map.selectAll("state").style("fill", d => colorScale(d.properties.percent_artists))
+
+               
+
+                function getKeyByValue(object, value) {
+                    return Object.keys(object).find(key => object[key] === value);
+                }
+
+                let table = d3.select('#table');
+
+                map.selectAll(".state").on("click", clicked_map);
+                graph.selectAll("circle").on("click", clicked_graph);
 
 
-                    function getKeyByValue(object, value) {
-                        return Object.keys(object).find(key => object[key] === value);
+                function clicked_map(event, d) {
+                    // Get the state code of the selected state
+                    let this_state_code = event.target.__data__.id
+                    this_state_code = this_state_code < 10 ? ('0' + this_state_code).toString() : this_state_code.toString();
+                    let this_abbr = getKeyByValue(state_codes, this_state_code);
+                    let this_state = getKeyByValue(us_state_to_abbrev, this_abbr);
+                    // Remove the previous table
+                    // table.selectAll('*').remove();
+                    //Check whether the same state is selected
+                    if (parseInt(this_state_code) !== curr_state_selected_id) {
+                        // If not so, move to a new state
+                        requestData_table(sl_year, this_state);
+                        // Highlight the state on the map
+                        map.selectAll(".state").transition().duration(200).style("opacity", d => {
+                            if (parseInt(d.id) === parseInt(this_state_code)) {
+                                return 1;
+                            }
+                            return 0.1;
+                        });
+                        // Highlight the state on the graph
+                        graph.selectAll("circle").transition().duration(200).style("opacity", d => {
+                            // console.log(d);
+                            if (parseInt(state_codes[us_state_to_abbrev[d.state]]) === parseInt(this_state_code)) {
+                                return 1;
+                            }
+                            return 0.1;
+                        });
+                        // Save the most recent selected state
+                        curr_state_selected_id = parseInt(this_state_code);
+                    } else {
+                        // If the same state is clicked again, we de-select the state and show the overview
+                        map.selectAll(".state").transition().duration(200).style("opacity", d => 1);
+                        graph.selectAll("circle").transition().duration(200).style("opacity", d => 1);
+                        curr_state_selected_id = "";
+                        requestData_table(sl_year, "all");
                     }
 
-                    let table = d3.select('#table');
-
-                    map.selectAll(".state").on("click", clicked_map);
-                    graph.selectAll("circle").on("click", clicked_graph);
 
 
+                }
+                let curr_state_selected_id = '';
 
-                    function clicked_map(event, d) {
-                        // Get the state code of the selected state
-                        let this_state_code = event.target.__data__.id
-                        this_state_code = this_state_code < 10 ? ('0' + this_state_code).toString() : this_state_code.toString();
-                        let this_abbr = getKeyByValue(state_codes, this_state_code);
-                        let this_state = getKeyByValue(us_state_to_abbrev, this_abbr);
-                        // Remove the previous table
-                        table.selectAll('*').remove();
-                        //Check whether the same state is selected
-                        if (parseInt(this_state_code) !== curr_state_selected_id) {
-                            // If not so, move to a new state
-                            requestData_table(sl_year, this_state);
-                            // Highlight the state on the map
-                            map.selectAll(".state").transition().duration(200).style("opacity", d => {
-                                if (parseInt(d.id) === parseInt(this_state_code)) {
-                                    return 1;
-                                }
-                                return 0.5;
-                            });
-                            // Highlight the state on the graph
-                            graph.selectAll("circle").transition().duration(200).style("opacity", d => {
-                                // console.log(d);
-                                if (parseInt(state_codes[us_state_to_abbrev[d.state]]) === parseInt(this_state_code)) {
-                                    return 1;
-                                }
-                                return 0.5;
-                            });
-                            // Save the most recent selected state
-                            curr_state_selected_id = parseInt(this_state_code);
-                        } else {
-                            // If the same state is clicked again, we de-select the state and show the overview
-                            map.selectAll(".state").transition().duration(200).style("opacity", d => 1);
-                            graph.selectAll("circle").transition().duration(200).style("opacity", d => 1);
-                            curr_state_selected_id = "";
-                            requestData_table(sl_year, "all");
-                        }
+                function clicked_graph(event, d) {
+                    // Similar to clicked_map
+                    let this_state_code = event.target.id;
+                    let this_abbr = getKeyByValue(state_codes, this_state_code);
+                    let this_state = getKeyByValue(us_state_to_abbrev, this_abbr);
 
 
+                    if (parseInt(this_state_code) !== curr_state_selected_id) {
+                        requestData_table(sl_year, this_state);
+                        map.selectAll(".state").transition().duration(200).style("opacity", d => {
+                            if (parseInt(d.id) === parseInt(this_state_code)) {
+                                return 1;
+                            }
+                            return 0.1;
+                        });
+                        graph.selectAll("circle").transition().duration(200).style("opacity", d => {
+                            // console.log(d);
+                            if (parseInt(state_codes[us_state_to_abbrev[d.state]]) === parseInt(this_state_code)) {
+                                return 1;
+                            }
+                            return 0.1;
+                        });
+                        curr_state_selected_id = parseInt(this_state_code);
 
-                    }
-                    let curr_state_selected_id = '';
-
-                    function clicked_graph(event, d) {
-                        // Similar to clicked_map
-                        let this_state_code = event.target.id;
-                        let this_abbr = getKeyByValue(state_codes, this_state_code);
-                        let this_state = getKeyByValue(us_state_to_abbrev, this_abbr);
-                        table.selectAll('*').remove();
-
-                        if (parseInt(this_state_code) !== curr_state_selected_id) {
-                            requestData_table(sl_year, this_state);
-                            map.selectAll(".state").transition().duration(200).style("opacity", d => {
-                                if (parseInt(d.id) === parseInt(this_state_code)) {
-                                    return 1;
-                                }
-                                return 0.1;
-                            });
-                            graph.selectAll("circle").transition().duration(200).style("opacity", d => {
-                                // console.log(d);
-                                if (parseInt(state_codes[us_state_to_abbrev[d.state]]) === parseInt(this_state_code)) {
-                                    return 1;
-                                }
-                                return 0.1;
-                            });
-                            curr_state_selected_id = parseInt(this_state_code);
-
-                        } else {
-                            map.selectAll(".state").transition().duration(200).style("opacity", 1);
-                            graph.selectAll("circle").transition().duration(200).style("opacity", 1);
-                            curr_state_selected_id = '';
-                        }
-
-
+                    } else {
+                        map.selectAll(".state").transition().duration(200).style("opacity", 1);
+                        graph.selectAll("circle").transition().duration(200).style("opacity", 1);
+                        curr_state_selected_id = '';
+                        requestData_table(sl_year, "all");
                     }
 
 
                 }
-                requestData_map(2007);
+
 
             }
-            request_all_data();
-
+            requestData_map(2007);
         </script>
     </div>
 
@@ -664,7 +670,6 @@
 
             // getData(2007);
 
-
             let text_year = d3.select("#text_year");
 
 
@@ -707,7 +712,7 @@
                                 state_codes[us_state_to_abbrev[d.state]]
                             )
                             .attr("opacity", 0.8)
-                            .call(enter => enter.transition().attr("opacity", 0.9)),
+                            .call(enter => enter.transition().attr("opacity", 0.8)),
                         update => update.call(update => update.transition()
                             .attr("fill", d => colorScale(state_region_mapping[d.state]))
                             .attr("cx", d => hoursScale(d.hours))
@@ -743,52 +748,10 @@
                 // graph.selectAll('*').remove();
                 getData(selected_year);
                 requestData_map(selected_year);
-                table.selectAll('*').remove();
+                // table.selectAll('*').remove();
                 requestData_table(selected_year, "all");
+                updateTitle(selected_year);
                 curr_year = parseInt(selected_year);
-
-                // text_year.html("");
-                // let print_text = text_year.append("text").text(selected_year).attr("x", 100).attr("y", 100).style("font", "100px").style("fill", "darkred").attr("class", "year");
-                let print_text = text_year.select("#year").text(selected_year);
-
-                // console.log(print_text);
-                // chartArea.selectAll("text.text_year")
-                //     .data(dataInitial)
-                //     .join(
-                //         enter => enter.append("text")
-                //             .attr("fill", "black")
-                //             .attr('class', "text_year")
-                //             .call(enter => enter.transition()),
-                //         update => update.call(update => update.transition()
-                //             // .attr("fill", d => colorScale(state_region_mapping[d.state]))
-                //             // .attr("cx", d => hoursScale(d.hours))
-                //             // .attr("cy", d => outputScale(d.output))
-                //             // .attr("r", d => employScale(d.employment))),
-                //             // .call( update => update.transition().duration(100)
-                //         ),
-                //         exit => exit.call(exit => exit.transition().attr('opacity', 0).remove())
-                //         // exit => exit
-                //     );
-
-                // create a cell in each row for each column
-                var cells = text_year.selectAll('text#year')
-                    // .data(selected_year)
-                    .join(
-                        enter => enter.append('text')
-                            .call(enter => enter.transition()),
-                        update => update.call(update => update.transition()
-                            .attr('fill', 'red')),
-                        exit => exit.call(exit => exit.transition().remove())
-                    )
-                // const yearLabel = graph.append('text')
-                //     .attr('class', 'year')
-                //     .attr('x', 40)
-                //     .attr('y', height - margin.bottom - 600)
-                //     .attr('fill', '#ccc')
-                //     .attr('font-family', 'Helvetica Neue, Arial')
-                //     .attr('font-weight', 500)
-                //     .attr('font-size', 80)
-                //     .text(selected_year);
             });
 
             d3.select("button#back").on("click", function (event) {
@@ -798,7 +761,8 @@
                 d3.select('#slider').property("value", curr_year);
                 getData(curr_year);
                 requestData_map(curr_year);
-                table.selectAll('*').remove();
+                updateTitle(curr_year);
+                // table.selectAll('*').remove();
                 requestData_table(curr_year, "all");
             });
             d3.select("button#forward").on("click", function (event) {
@@ -808,7 +772,8 @@
                 d3.select('#slider').property("value", curr_year);
                 getData(curr_year);
                 requestData_map(curr_year);
-                table.selectAll('*').remove();
+                updateTitle(curr_year);
+                // table.selectAll('*').remove();
                 requestData_table(curr_year, "all");
             })
 
@@ -818,29 +783,33 @@
     </script>
 
     <div class="right">
+        <div id="table_title">
+            <p id="table_title_content"></p>
+        </div>
 
         <table id="table">
             <th id="thead"></th>
             <tr>
-                <td>Pay</td>
-                <td id="payVal"></td>
+                <td id="payVal">
+                    <p id="this_payVal">Pay</p>
+                </td>
             </tr>
             <tr>
-                <td>Hours Worked</td>
-                <td id="hoursVal"></td>
+                <td id="hoursVal">
+                    <p id="this_hoursVal"></p>
+                </td>
             </tr>
             <tr>
-                <td>Average Output</td>
-                <td id="outputVal"></td>
+                <td id="outputVal">
+                    <p id ="this_outputVal" ></p>
+                </td>
             </tr>
             <tr>
-                <td>Total Employment</td>
-                <td id="employVal"></td>
+                <td id="employmentVal">
+                    <p id="this_employmentVal"></p>
+                </td>
             </tr>
         </table>
-        <div id="text_year">
-            <p id="year"></p>
-        </div>
     </div>
     <script>
         const requestData_table = async function (sl_year, states) {
@@ -851,119 +820,51 @@
 
             let table_data;
             let title;
+            let pay = 0;
+            let hours = 0;
+            let output = 0;
+            let employment = 0;
             if (states == "all") {
-                title = "All States' Data from " + sl_year;
-                let pay = 0;
-                let hours = 0;
-                let output = 0;
-                let employment = 0;
+                title = "U.S. Data from " + sl_year;
                 for (let i = 0; i < data.length; i++) {
                     pay += data[i].pay;
-                    hours += data[i].hours;
+                    hours += data[i].avg_hours;
                     output += data[i].output;
                     employment += data[i].employment;
                 }
 
-                table_data = [{
-                    "type": 'Pay',
-                    "data": pay.toFixed(2)
-                }, {
-                    "type": 'Hours',
-                    "data": hours.toFixed(2)
-                }, {
-                    "type": 'Output',
-                    "data": output.toFixed(2)
-                }, {
-                    "type": 'Employment',
-                    "data": employment.toFixed(2)
-                }];
+                ;
             } else {
-                title = "Data from " + states + " from " + sl_year;
+                title = states + " Data from " + sl_year;
                 this_state = data.filter(d => d.state === states);
-                // console.log(this_state);
-                table_data = [{
-                    "type": 'Pay',
-                    "data": this_state[0]['pay'].toFixed(2)
-                }, {
-                    "type": 'Hours',
-                    "data": this_state[0]['hours'].toFixed(2)
-                }, {
-                    "type": 'Output',
-                    "data": this_state[0]['output'].toFixed(2)
-                }, {
-                    "type": 'Employment',
-                    "data": this_state[0]['employment'].toFixed(2)
-                }];
+                pay = this_state[0]['pay'];
+                hours = this_state[0]['hours'];
+                output = this_state[0]['output'];
+                employment = this_state[0]['employment'];
+
             }
 
 
-            function tabulate(data, columns) {
-                // var table = d3.select('#table');
-                // // table.append('text').text(title);
-                // var thead = table.append('thead');
-                // var tbody = table.append('tbody');
 
-                let table = d3.select("table");
-                let thead = table.select("#year")
+            let text_title =  d3.select("#table_title");
+            text_title.select("#table_title_content").text(title);
 
-                thead.append('text').text(title).attr('font-size', '10').attr('text-anchor', 'end');
-                // append the header rows
-                thead.append('tr')
-                    .selectAll('th')
-                    .data(columns)
-                    .join(
-                        enter => enter.append('th')
-                            .text(function (column) {
-                                return column;
-                            })
-                            .call(enter => enter.transition().attr("opacity", 0.8)),
-                        update => update.call(update => update.transition()),
-                        exit => exit.call(exit => exit.transition().attr('opacity', 0).remove())
-                    )
+            let text_pay = d3.select("#payVal");
 
-                // create a row for each object in the data
-                var rows = tbody.selectAll('tr')
-                    .data(data)
-                    .join(
-                        enter => enter.append('tr')
-                            .call(enter => enter.transition().attr("opacity", 0.8)),
-                        update => update.call(update => update.transition()),
-                        exit => exit.call(exit => exit.transition().attr('opacity', 0).remove())
-                    )
-                // .enter()
-                // .append('tr');
+            text_pay.select("#this_payVal").text("Pay:     " + pay.toFixed(2) + '   USD');
+            let text_hours = d3.select("#hoursVal");
 
-                // create a cell in each row for each column
-                var cells = rows.selectAll('td')
-                    .data(function (row) {
-                        return columns.map(function (column) {
-                            return {
-                                column: column,
-                                value: row[column]
-                            };
-                        });
-                    })
-                    .join(
-                        enter => enter.append('td')
-                            .text(function (d) {
-                                return d.value;
-                            })
-                            .call(enter => enter.transition().attr("opacity", 0.8)),
-                        update => update.call(update => update.transition()
-                            .attr('fill', 'red')),
-                        exit => exit.call(exit => exit.transition().attr('opacity', 0).remove())
-                    )
-                // .enter()
-                // .append('td')
-                // .text(function(d) {
-                //     return d.value;
-                // });
+            text_hours.select("#this_hoursVal").text("Hours:     " + hours.toFixed(2) + '   Hours');
+            let text_output = d3.select("#outputVal");
 
-                return table;
-            }
+            text_output.select("#this_outputVal").text("Average Output:     " + (output / 51).toFixed(2) + '   Millions USD');
+            let text_employ = d3.select("#employmentVal");
+
+            text_employ.select("#this_employmentVal").text("Total employment:     " + employment.toFixed(2) + '   Thousands of People');
+
 
             // render the tables
-            tabulate(table_data, ['type', 'data']); // 2 column table
+            // tabulate(table_data, ['type', 'data']); // 2 column table
         }
         requestData_table(2007, "all");
     </script>
@@ -975,4 +876,5 @@
 
 </body>
 
+</html>
 </html>
