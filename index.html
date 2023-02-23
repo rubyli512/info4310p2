@@ -13,60 +13,59 @@
         margin-left: 20px;
         margin-right: 20px;
     }
-
+    
     .gridlines line {
         stroke: rgb(223, 223, 223);
     }
-
+    
     .gridlines .domain {
         stroke: none;
     }
-
+    
     .state {
         fill: white;
     }
-
+    
     .outline {
         fill: none;
         stroke: gray;
         stroke-width: 1px;
     }
-
+    
     .main {
         display: flex;
         flex-direction: row;
-        justify-content:center;
+        justify-content: center;
     }
-
+    
     .middle {
         display: flex;
         flex-direction: column;
     }
-
-    .reminders{
+    
+    .reminders {
         text-align: center;
         color: gray;
     }
-/* 
+    /* 
     .chloropleth{
         display: flex;
         flex-direction: column;
         justify-content: center;
     } */
-
+    
     .mapLegend {
         background-color: rgb(228, 243, 255);
         text-align: center;
-
     }
-
+    
     #mapLegendNote {
         text-align: center;
         margin: 0;
         font-size: 13px;
         width: 500px;
     }
-
+    
     #title {
         font-size: 80px;
         color: darkblue;
@@ -74,16 +73,16 @@
         font-weight: 600;
         margin-bottom: 0;
     }
-
+    
     #intro_p {
         width: 1200px;
         margin: auto;
     }
-
-    #reminder{
+    
+    #reminder {
         font-weight: bold;
     }
-
+    
     #year-content {
         font-family: 'Helvetica Neue, Arial';
         font-weight: 500;
@@ -94,32 +93,31 @@
         margin-bottom: 0;
         margin-top: 0;
     }
-
+    
     #interaction {
         width: 600px;
         margin: auto;
     }
-
+    
     #slider {
         width: 600px;
         margin: auto;
     }
-
+    
     .right {
         border-style: solid;
         border-style: 1px;
         height: 350px;
     }
-
+    
     #table {
         font-family: 'Helvetica Neue, Arial';
         font-weight: 70;
         font-size: 15;
         fill: '#ccc';
         text-align: left;
-
     }
-
+    
     #table_title {
         font-family: 'Helvetica Neue, Arial';
         font-weight: bold;
@@ -127,30 +125,29 @@
         fill: '#ccc';
         text-align: center;
     }
-
+    
     .td {
         margin: 50px;
     }
-
+    
     .right {
         padding-top: 100px;
     }
-
+    
     .buttons {
         display: flex;
         flex-direction: row;
         justify-content: center;
     }
-
+    
     button {
         border-radius: 8px;
         transition-duration: 0.4s;
         font-size: 20px;
         row-gap: 10px;
         margin: 5px;
-
     }
-
+    
     button:hover {
         background-color: white;
         color: black;
@@ -161,8 +158,7 @@
 
     <p id="title">Does Hard Work Pay Off ?</p>
     <div id="intro_p">
-        <p>Are hard-working people more productive and earning more than others? The below diagrams help us explore how
-            the average hours worker per person relate to productivity and wage.</p>
+        <p>Are hard-working people more productive and earning more than others? The below diagrams help us explore how the average hours worker per person relate to productivity and wage.</p>
         <p id="reminder">Click on the states on the map and circles on the graph to find out more about each state.</p>
     </div>
     <div id='big-year'>
@@ -181,12 +177,12 @@
     </div>
 
     <script>
+        // Update the title of the plot
         function updateTitle(sl_year) {
             let big_title = d3.select("#big-year")
             big_title.select("#year-content").text(sl_year);
         }
         updateTitle(2007);
-    // d3.select("#big-year").select("#year-content").text(year);
     </script>
     <div class="main">
         <div id='chloropleth'>
@@ -210,6 +206,7 @@
                 const mapHeight = height_map - margin.top - margin.bottom;
                 const map = svg.append("g")
                     .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+                // Source of the following dictionary: https://gist.github.com/JeffPaine/3083347
                 const abbv = us_state_to_abbrev = {
                     "Alabama": "AL",
                     "Alaska": "AK",
@@ -269,6 +266,7 @@
                     "United States Minor Outlying Islands": "UM",
                     "U.S. Virgin Islands": "VI",
                 };
+                // Source of the following dictionary: https://gist.github.com/dandye/2997828
                 const fips_codes = state_codes = {
                     'WA': '53',
                     'DE': '10',
@@ -323,7 +321,7 @@
                     'OR': '41',
                     'SD': '46'
                 };
-                const request_all_data = async function (sl_year) {
+                const request_all_data = async function(sl_year) {
                     const us = await d3.json("us-smaller.json");
                     var states = topojson.feature(us, us.objects.states);
                     var statesMesh = topojson.mesh(us, us.objects.states);
@@ -331,9 +329,6 @@
                     var path = d3.geoPath().projection(projection);
 
                     let data = await d3.csv("processed_df.csv", d3.autoType);
-                    // data = data.filter(d => d.year === parseInt(2007));
-
-                    // const data = d3.select("processed_df.csv");
                     let compExtent = d3.extent(data, d => d.pay);
                     let compScale = d3.scaleSequential(d3.interpolateViridis).domain(compExtent);
                     let payScale = d3.scaleQuantile()
@@ -371,8 +366,8 @@
                         // In this case the "data" are pixels, and we get numbers to use in colorScale
                         // Use this to make axis labels
                         let barScale = d3.scaleLinear().domain([legendMinMax[0] - minMaxExtension,
-                        legendMinMax[1] + minMaxExtension
-                        ])
+                                legendMinMax[1] + minMaxExtension
+                            ])
                             .range([0, legendBarWidth]);
                         let barAxis = d3.axisBottom(barScale);
 
@@ -484,7 +479,7 @@
 
                     drawLegend("#mapLegend", payScale);
 
-                    const requestData_map = async function (sl_year) {
+                    const requestData_map = async function(sl_year) {
                         // load dataset
                         // let data = await d3.csv("processed_df.csv", d3.autoType);
                         data = data.filter(d => d.year === parseInt(sl_year));
@@ -500,9 +495,9 @@
                             .data(states.features)
                             .join(
                                 enter => enter.append("path").attr("d", path)
-                                    .attr("class", "state")
-                                    .style("fill", d => payScale(
-                                        stateIdCounts[d.id])).call(enter => enter.transition().attr("opacity", 1)),
+                                .attr("class", "state")
+                                .style("fill", d => payScale(
+                                    stateIdCounts[d.id])).call(enter => enter.transition().attr("opacity", 1)),
                                 update => update.call(update => update.transition().style("fill", d => payScale(
                                     stateIdCounts[d.id]))),
                                 exit => exit.call(exit => exit.transition().attr('opacity', 0).remove())
@@ -511,8 +506,6 @@
                         map.append("path").datum(statesMesh)
                             .attr("class", "outline")
                             .attr("d", path);
-                        // map.selectAll("state").style("fill", d => colorScale(d.properties.percent_artists))
-
 
                         function getKeyByValue(object, value) {
                             return Object.keys(object).find(key => object[key] === value);
@@ -520,63 +513,15 @@
 
                         let table = d3.select('#table');
 
-                        // let mouseover_map = function(d){
-                        //     d3.selectAll(".state")
-                        //         .transition()
-                        //         .duration(200)
-                        //         .style("opacity", 0.1)
-                        //     d3.select(this)
-                        //         .transition()
-                        //         .duration(200)
-                        //         .style("opacity", 1)
-                        //         .style("stroke", "black")
-                        // }
-
-                        // let mouseout_map = function(d){
-                        //     d3.selectAll(".state")
-                        //         .transition()
-                        //         .duration(200)
-                        //         .style("opacity", 1)
-                        //     d3.select(this)
-                        //         .transition()
-                        //         .duration(200)
-                        //         .style("stroke", "transparent")
-                        // }
-
-                        // let mouseover_graph = function(d){
-                        //     d3.selectAll("circle")
-                        //         .transition()
-                        //         .duration(200)
-                        //         .style("opacity", 0.1)
-                        //     d3.select(this)
-                        //         .transition()
-                        //         .duration(200)
-                        //         .style("opacity", 1)
-                        //         .style("stroke", "black")
-                        // }
-
-                        // let mouseout_graph = function(d){
-                        //     if (clicked != true){
-                        //         d3.selectAll("circle")
-                        //         .transition()
-                        //         .duration(200)
-                        //         .style("opacity", 1)
-                        //         d3.select(this)
-                        //             .transition()
-                        //             .duration(200)
-                        //             .style("stroke", "transparent")
-                        //     }
-                            
-                        // }
-
                         map.selectAll(".state").on("click", clicked_map);
                         // map.selectAll(".state").on("mouseover", mouseover_map).on("mouseout",mouseout_map);
                         graph.selectAll("circle").on("click", clicked_graph);
                         // graph.selectAll("circle").on("mouseover", mouseover_graph).on("mouseout",mouseout_graph);
 
 
-                        
+
                         let clicked;
+
                         function clicked_map(event, d) {
                             clicked = true;
                             // Get the state code of the selected state
@@ -721,6 +666,7 @@
                 // console.log(bottomAxis);
                 bottomAxisG.transition().call(bottomAxis);
 
+                // The following dictionary comes from the source: https://gist.github.com/sfirrin/fd01d87f022d80e98c37a045c14109fe
                 let state_region_mapping = {
                     'Washington': 'West',
                     'Oregon': 'West',
@@ -830,14 +776,7 @@
                     'SD': '46'
                 };
 
-                // chartArea.selectAll("circle").data(dataInitial).join("circle")
-                //     .attr("fill", d => colorScale(state_region_mapping[d.state]))
-                //     .attr("cx", d => hoursScale(d.hours))
-                //     .attr("cy", d => outputScale(d.output))
-                //     .attr("r", d => employScale(d.employment))
-                //     .attr("opacity", 0.8);
 
-                // getData(2007);
 
                 let text_year = d3.select("#text_year");
 
@@ -918,22 +857,22 @@
                         .data(dataInitial)
                         .join(
                             enter => enter.append("circle")
-                                .attr("fill", d => colorScale(state_region_mapping[d.state]))
-                                .attr("cx", d => hoursScale(d.hours))
-                                .attr("cy", d => outputScale(d.output))
-                                .attr("r", d => employScale(d.employment))
-                                .attr("id", d => state_codes[us_state_to_abbrev[d.state]]
+                            .attr("fill", d => colorScale(state_region_mapping[d.state]))
+                            .attr("cx", d => hoursScale(d.hours))
+                            .attr("cy", d => outputScale(d.output))
+                            .attr("r", d => employScale(d.employment))
+                            .attr("id", d => state_codes[us_state_to_abbrev[d.state]]
 
 
-                                )
-                                .attr("opacity", 0.8)
-                                .call(enter => enter.transition().attr("opacity", 0.8)),
+                            )
+                            .attr("opacity", 0.8)
+                            .call(enter => enter.transition().attr("opacity", 0.8)),
                             update => update.call(update => update.transition()
                                 .attr("fill", d => colorScale(state_region_mapping[d.state]))
                                 .attr("cx", d => hoursScale(d.hours))
                                 .attr("cy", d => outputScale(d.output))
                                 .attr("r", d => employScale(d.employment)))
-                                .attr("id", d => state_codes[us_state_to_abbrev[d.state]])
+                            .attr("id", d => state_codes[us_state_to_abbrev[d.state]])
                             /*
                             .attr("opacity", d => {
                                 if (selecetd_state_code != -1 && state_codes[us_state_to_abbrev[d.state]] !== selected_state_code) {
@@ -957,7 +896,7 @@
                 let table = d3.select('#table');
 
 
-                d3.select("#slider").on("input", function (event) {
+                d3.select("#slider").on("input", function(event) {
                     let selected_year = event.target.value;
                     // console.log(selected_year);
                     // graph.selectAll('*').remove();
@@ -970,7 +909,7 @@
                     curr_year = parseInt(selected_year);
                 });
 
-                d3.select("button#back").on("click", function (event) {
+                d3.select("button#back").on("click", function(event) {
                     if (curr_year != 2007) {
                         curr_year -= 1;
                     }
@@ -981,7 +920,7 @@
                     // table.selectAll('*').remove();
                     requestData_table(curr_year, "all");
                 });
-                d3.select("button#forward").on("click", function (event) {
+                d3.select("button#forward").on("click", function(event) {
                     if (curr_year != 2021) {
                         curr_year += 1;
                     }
@@ -1029,7 +968,7 @@
             </table>
         </div>
         <script>
-            const requestData_table = async function (sl_year, states) {
+            const requestData_table = async function(sl_year, states) {
                 let table = d3.select('#table');
                 let data = await d3.csv("processed_df.csv", d3.autoType);
                 data = data.filter(d => d.year === parseInt(sl_year));
