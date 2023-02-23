@@ -84,14 +84,15 @@
 
     #slider {
         width: 600px;
-        margin: auto; 
+        margin: auto;
     }
 
-    .right{
+    .right {
         border-style: solid;
         border-style: 1px;
         height: 350px;
     }
+
     #table {
         font-family: 'Helvetica Neue, Arial';
         font-weight: 70;
@@ -141,7 +142,11 @@
 <body>
 
     <p id="title">Does Hard Work Pay Off?</p>
-
+    <div id="intro_p">
+        <p>Are hard-working people more productive and earning more than others? The below diagrams help us explore how
+            the average hours worker per person relate to productivity and wage.</p>
+        <p>Click on the states on the map and circles on the graph to find out more about each state.</p>
+    </div>
     <div id='big-year'>
         <p id='year-content'></p>
     </div>
@@ -154,11 +159,7 @@
             <button id="forward">Forward</button>
         </div>
     </div>
-    <div id="intro_p">
-        <p>Are hard-working people more productive and earning more than others? The below diagrams help us explore how
-            the average hours worker per person relate to productivity and wage.</p>
-        <p>Click on the states on the map and circles on the graph to find out more about each state.</p>
-    </div>
+
     <script>
         function updateTitle(sl_year) {
             let big_title = d3.select("#big-year")
